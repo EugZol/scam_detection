@@ -1,0 +1,3 @@
+# Hydra config
+run:
+  dir: outputs/${now:%Y-%m-%d_%H-%M-%S}

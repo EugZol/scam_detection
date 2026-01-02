@@ -1,0 +1,74 @@
+import re
+from typing import List
+
+import pandas as pd
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.preprocessing import LabelEncoder
+from transformers import AutoTokenizer
+
+
+def clean_text(text: str) -> str:
+    """Clean the email text by removing extra spaces, newlines, and special characters."""
+    if not isinstance(text, str):
+        return ""
+    text = re.sub(r'\s+', ' ', text)
+    text = re.sub(r'[^\w\s]', '', text)
+    return text.strip().lower()
+
+
+def load_and_preprocess_data(csv_path: str) -> pd.DataFrame:
+    """
+    Load the CSV data and preprocess it.
+
+    Args:
+        csv_path: Path to the CSV file
+
+    Returns:
+        Preprocessed DataFrame with 'text' and 'label' columns
+    """
+    df = pd.read_csv(csv_path)
+    df = df[['Email Text', 'Email Type']]
+    df.columns = ['text', 'label']
+    df['text'] = df['text'].apply(clean_text)
+    df['label'] = df['label'].map({'Safe Email': 0, 'Phishing Email': 1})
+    return df.dropna()
+
+
+def prepare_tfidf_features(texts: List[str], vectorizer: TfidfVectorizer = None, fit: bool = True) -> TfidfVectorizer:
+    """
+    Prepare TF-IDF features from texts.
+
+    Args:
+        texts: List of texts
+        vectorizer: Pre-fitted vectorizer, if None and fit=True, create new
+        fit: Whether to fit the vectorizer
+
+    Returns:
+        Fitted vectorizer
+    """
+    if vectorizer is None:
+        vectorizer = TfidfVectorizer(max_features=5000, stop_words='english')
+    if fit:
+        vectorizer.fit(texts)
+    return vectorizer
+
+
+def prepare_transformer_features(texts: List[str], tokenizer: AutoTokenizer, max_length: int = 512) -> dict:
+    """
+    Prepare features for transformer model.
+
+    Args:
+        texts: List of texts
+        tokenizer: HuggingFace tokenizer
+        max_length: Maximum sequence length
+
+    Returns:
+        Tokenized inputs
+    """
+    return tokenizer(
+        texts,
+        truncation=True,
+        padding=True,
+        max_length=max_length,
+        return_tensors='pt'
+    )

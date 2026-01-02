@@ -1,0 +1,4 @@
+# Serve config
+host: 0.0.0.0
+port: 8000
+model_path: models/onnx/model.onnx
