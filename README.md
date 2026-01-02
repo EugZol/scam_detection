@@ -19,8 +19,9 @@ Key features:
 ### Setup
 
 1. **Prerequisites:**
-   - Docker and docker-compose
+   - Python 3.9+
    - Git
+   - uv package manager
 
 2. **Clone the repository:**
    ```bash
@@ -28,26 +29,24 @@ Key features:
    cd scam_detection
    ```
 
-3. **Build and start services:**
+3. **Install dependencies:**
    ```bash
-   docker-compose up -d
-   ```
-   
-   Note: The first build will take time to install dependencies. Subsequent runs will be much faster as dependencies are cached in a Docker volume.
-
-4. **Install dependencies (first time only):**
-   ```bash
-   docker-compose exec scam_detection uv sync
+   uv sync
    ```
 
-5. **Install pre-commit hooks (inside container):**
+4. **Install pre-commit hooks:**
    ```bash
-   docker-compose exec scam_detection uv run pre-commit install
+   uv run pre-commit install
    ```
 
-6. **Run pre-commit on all files:**
+5. **Run pre-commit on all files:**
    ```bash
-   docker-compose exec scam_detection uv run pre-commit run -a
+   uv run pre-commit run -a
+   ```
+
+6. **Start MLflow server (in separate terminal):**
+   ```bash
+   mlflow server --host 127.0.0.1 --port 5000
    ```
 
 ### Train
@@ -56,7 +55,7 @@ To train the model:
 
 1. **For Transformer model:**
    ```bash
-   docker-compose exec scam_detection uv run scam_detection
+   uv run scam_detection
    ```
    This uses the default config (transformer model).
 
@@ -74,15 +73,10 @@ The training process includes:
 
 1. **Export to ONNX:**
    ```bash
-   docker-compose exec scam_detection python scripts/export_onnx.py models/checkpoints/best.ckpt models/onnx/model.onnx distilbert-base-uncased
+   uv run python scripts/export_onnx.py models/checkpoints/best.ckpt models/onnx/model.onnx distilbert-base-uncased
    ```
 
-2. **Build TensorRT engine:**
-   ```bash
-   docker-compose exec scam_detection bash scripts/build_tensorrt.sh models/onnx/model.onnx models/trt/model.trt
-   ```
-
-The exported models are optimized for inference and can be deployed in production environments.
+The exported ONNX model is optimized for inference and can be deployed in production environments.
 
 ### Infer
 
@@ -90,23 +84,19 @@ To run inference:
 
 1. **Using the trained model:**
    ```bash
-   docker-compose exec scam_detection python scripts/smoke_test_infer.py
+   uv run python scripts/smoke_test_infer.py
    ```
 
 2. **Serving with MLflow:**
    - The model is logged to MLflow during training
    - Use MLflow's serving capabilities to deploy the model
 
-3. **Serving with Triton:**
-   - Convert the ONNX model to Triton format
-   - Deploy using Triton Inference Server
-
 Input format: JSON with "text" field containing the email content.
 Output: Prediction score (0 for safe, 1 for phishing).
 
 ## Dependencies
 
-- PyTorch (with ROCm support for AMD GPUs)
+- PyTorch (CPU version)
 - PyTorch Lightning
 - Transformers
 - Scikit-learn

@@ -12,7 +12,7 @@ def smoke_test():
     Run smoke test for inference.
     """
     # Load model (mock)
-    model = EmailClassifier(model_type='transformer')  # This will load default
+    model = EmailClassifier(model_type="transformer")  # This will load default
 
     predictor = Predictor(model)
 

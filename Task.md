@@ -4,20 +4,20 @@ It is necessary to create an open repository on GitHub, create a Python package 
 
 The repository must implement (details below in the sections):
 
-* data loading  
-* data preprocessing (if necessary)  
-* training  
-* preparation for production  
+* data loading
+* data preprocessing (if necessary)
+* training
+* preparation for production
 * inference
 
 How we will check your work (generalized steps):
 
-1\. Clone the repository  
-2\. Create a new clean virtualenv (according to instructions)  
-3\. Install dependencies (according to instructions)  
-4\. \`pre-commit install\` \- expect successful installation  
-5\. \`pre-commit run \-a\` \- expect a successful result  
-6\. Run training  
+1\. Clone the repository
+2\. Create a new clean virtualenv (according to instructions)
+3\. Install dependencies (according to instructions)
+4\. \`pre-commit install\` \- expect successful installation
+5\. \`pre-commit run \-a\` \- expect a successful result
+6\. Run training
 7\. Run the prediction system
 
 Below are the mandatory parts of your project: files and description of requirements for the main stages of work.
@@ -26,16 +26,16 @@ List of necessary conditions
 
 To get a grade, you need to fulfill all of them. Works that do not satisfy them will be graded 0 points.
 
-* The repository is accessible via the provided link  
-* The submitted code version is in the main branch of the repository (master or main). Other branches are not considered.  
-* The project topic corresponds to the one stated in the first assignment  
+* The repository is accessible via the provided link
+* The submitted code version is in the main branch of the repository (master or main). Other branches are not considered.
+* The project topic corresponds to the one stated in the first assignment
 * All main sections of the assignment (marked with an asterisk in the headings) are implemented (at least in a basic form)
 
 README.md (10 points) \*
 
 This is essentially an instruction for onboarding a new team member to your project. For this, you will need to describe two parts:
 
-* The semantic content of the project  
+* The semantic content of the project
 * Technical details of working with it
 
 The first part is the description of your project from the previous assignment. Basically, you need to copy it from there. It is necessary to maintain correct visual representation (division into headings of different levels, structure, etc.). Perhaps you should adjust some details based on what you have already learned.
@@ -128,25 +128,25 @@ List of typical mistakes
 
 What you must do (-3 points)
 
-\- There should be no executable code at the file level. Use \`if \_\_name\_\_ \== '\_\_main\_\_':\` in such cases.  
-  \- In particular, you cannot declare variables (except constants) at the top level of the file (not inside a function or class)  
-\- Do not use \`warnings.filterwarnings("ignore")\`. Never do this in \~\~production\~\~ any projects. This is a huge setup for shooting yourself in the foot. People write warnings to warn you \- take the necessary actions for this.  
-\- You cannot save data in Git\!\!\!\!\!\!\!\!\!\!\!\!\! That is, files like .json, .csv, .h5, etc. The same applies to trained model files (.cbm, .pth, .xyz, .onnx, etc.).  
-\- The repository name (including URL) should reflect the meaning of your project (e.g., cats-vs-dogs), not the course name (e.g., mlops\_homework). Use \- \[dash\] as a separator (not \_ \[underscore\]).  
-\- You need to name the Python package (aka the folder with your code) according to Python rules (snake\_case), not in any other way (e.g., MYopsTools).  
-\- Also, the Python package must be named according to the meaning of your project, not src or my\_project.  
-\- Use the default .gitignore for Python (not empty), supplement it with the paths you need. The default config can be found via search and is even suggested by GitHub when creating a repository.  
-\- Code files should be named in snake\_case, not CamelCase (e.g., Dataset.py).  
-\- Do not use argparse; instead, use fire, click, hydra, or another tool for CLI.  
+\- There should be no executable code at the file level. Use \`if \_\_name\_\_ \== '\_\_main\_\_':\` in such cases.
+  \- In particular, you cannot declare variables (except constants) at the top level of the file (not inside a function or class)
+\- Do not use \`warnings.filterwarnings("ignore")\`. Never do this in \~\~production\~\~ any projects. This is a huge setup for shooting yourself in the foot. People write warnings to warn you \- take the necessary actions for this.
+\- You cannot save data in Git\!\!\!\!\!\!\!\!\!\!\!\!\! That is, files like .json, .csv, .h5, etc. The same applies to trained model files (.cbm, .pth, .xyz, .onnx, etc.).
+\- The repository name (including URL) should reflect the meaning of your project (e.g., cats-vs-dogs), not the course name (e.g., mlops\_homework). Use \- \[dash\] as a separator (not \_ \[underscore\]).
+\- You need to name the Python package (aka the folder with your code) according to Python rules (snake\_case), not in any other way (e.g., MYopsTools).
+\- Also, the Python package must be named according to the meaning of your project, not src or my\_project.
+\- Use the default .gitignore for Python (not empty), supplement it with the paths you need. The default config can be found via search and is even suggested by GitHub when creating a repository.
+\- Code files should be named in snake\_case, not CamelCase (e.g., Dataset.py).
+\- Do not use argparse; instead, use fire, click, hydra, or another tool for CLI.
 \- Do not use single-letter variables except i, j, k. Instead, give variables semantically rich names (data or features instead of X, etc.).
 
 What is advisable to do (+2 points)
 
-\- Under the call \`if \_\_name\_\_ \== '\_\_main\_\_':\`, it is better to call exactly one function (you can call it main or something else), rather than writing all the logic directly under the if.  
-\- Use fire together with hydra via the compose API  
-\- Make one entry point \`commands.py\`, where you call the corresponding functions from files  
+\- Under the call \`if \_\_name\_\_ \== '\_\_main\_\_':\`, it is better to call exactly one function (you can call it main or something else), rather than writing all the logic directly under the if.
+\- Use fire together with hydra via the compose API
+\- Make one entry point \`commands.py\`, where you call the corresponding functions from files
 \- Use pathlib instead of os.path \- your life will become completely different colors
 
 The list of errors is not exhaustive. There are very many ways to do strange things, so try to apply the knowledge gained in the course, as well as your sense of beauty.
 
-P.S. If something is unclear or you want to do something differently \- write in the chat, we'll discuss it. These rules are not dogmas (although in this assignment you must follow them), but rather a set of good techniques that, however, need to be adapted to the task and the situation as a whole.  
+P.S. If something is unclear or you want to do something differently \- write in the chat, we'll discuss it. These rules are not dogmas (although in this assignment you must follow them), but rather a set of good techniques that, however, need to be adapted to the task and the situation as a whole.

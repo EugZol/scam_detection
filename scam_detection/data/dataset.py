@@ -1,8 +1,6 @@
 from typing import List
 
-import pandas as pd
 import torch
-from sklearn.feature_extraction.text import TfidfVectorizer
 from torch.utils.data import Dataset
 from transformers import AutoTokenizer
 
@@ -10,7 +8,13 @@ from transformers import AutoTokenizer
 class EmailDataset(Dataset):
     """Dataset for email classification."""
 
-    def __init__(self, texts: List[str], labels: List[int], tokenizer: AutoTokenizer = None, max_length: int = 512):
+    def __init__(
+        self,
+        texts: List[str],
+        labels: List[int],
+        tokenizer: AutoTokenizer = None,
+        max_length: int = 512,
+    ):
         self.texts = texts
         self.labels = labels
         self.tokenizer = tokenizer
@@ -27,20 +31,17 @@ class EmailDataset(Dataset):
             encoding = self.tokenizer(
                 text,
                 truncation=True,
-                padding='max_length',
+                padding="max_length",
                 max_length=self.max_length,
-                return_tensors='pt'
+                return_tensors="pt",
             )
             return {
-                'input_ids': encoding['input_ids'].flatten(),
-                'attention_mask': encoding['attention_mask'].flatten(),
-                'label': torch.tensor(label, dtype=torch.long)
+                "input_ids": encoding["input_ids"].flatten(),
+                "attention_mask": encoding["attention_mask"].flatten(),
+                "label": torch.tensor(label, dtype=torch.long),
             }
         else:
-            return {
-                'text': text,
-                'label': torch.tensor(label, dtype=torch.long)
-            }
+            return {"text": text, "label": torch.tensor(label, dtype=torch.long)}
 
 
 class TfidfEmailDataset(Dataset):
@@ -55,6 +56,6 @@ class TfidfEmailDataset(Dataset):
 
     def __getitem__(self, idx):
         return {
-            'features': self.features[idx],
-            'label': torch.tensor(self.labels[idx], dtype=torch.long)
+            "features": self.features[idx],
+            "label": torch.tensor(self.labels[idx], dtype=torch.long),
         }

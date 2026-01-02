@@ -145,6 +145,7 @@ Thumbs.db
 
 # MLflow
 mlruns/
+mlflow.db
 
 # Model files
 *.pth

@@ -5,7 +5,7 @@ output_dir: outputs
 
 data:
   csv_path: data/Phishing_Email.csv
-  model_type: transformer
+  model_type: tfidf
   tokenizer_name: distilbert-base-uncased
   max_length: 512
   batch_size: 16
@@ -14,7 +14,7 @@ data:
   random_state: 42
 
 model:
-  model_type: transformer
+  model_type: tfidf
   model_name: distilbert-base-uncased
 
 train:
@@ -34,14 +34,13 @@ infer:
 
 export:
   onnx_path: models/onnx/model.onnx
-  trt_path: models/trt/model.trt
 
 serve:
   host: 0.0.0.0
   port: 8000
 
 logging:
-  mlflow_tracking_uri: http://mlflow:5000
+  mlflow_tracking_uri: http://localhost:5000
   log_model: true
   log_params: true
   log_metrics: true

@@ -12,8 +12,9 @@ def test_export_onnx():
     # Mock test
     with tempfile.TemporaryDirectory() as tmpdir:
         onnx_path = os.path.join(tmpdir, "model.onnx")
-        # This will fail without a real model, but for smoke test, check if function exists
+        tokenizer = "distilbert-base-uncased"
+        # Smoke test: check if function exists (will fail without real model)
         try:
-            export_to_onnx("dummy", onnx_path)
+            export_to_onnx("dummy", onnx_path, tokenizer)
         except Exception:
             pass  # Expected to fail

@@ -1,4 +1,3 @@
 # Export config
 onnx_path: models/onnx/model.onnx
-trt_path: models/trt/model.trt
 input_sample: "This is a test email."

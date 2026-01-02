@@ -1,11 +1,12 @@
-import os
 import zipfile
 from pathlib import Path
 
 import requests
 
 
-def download_data(url: str = "https://example.com/Phishing_Email.csv.zip", data_dir: str = "data") -> None:
+def download_data(
+    url: str = "https://example.com/Phishing_Email.csv.zip", data_dir: str = "data"
+) -> None:
     """
     Download the phishing email dataset from the given URL and unzip it.
 
