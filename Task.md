@@ -155,4 +155,7 @@ P.S. If something is unclear or you want to do something differently \- write in
 
 1. No "emails", just "messages"
 2. No printf, only use of proper logging
-3. ...
+3. "log every X iteration" should be moved to train config
+4. MLFlow is at port 8080, configurable
+5. 3 charts are drawing
+6. Plots in .gitignore

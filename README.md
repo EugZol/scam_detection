@@ -46,7 +46,7 @@ Key features:
 
 6. **Start MLflow server (in separate terminal):**
    ```bash
-   mlflow server --host 127.0.0.1 --port 5000
+   mlflow server --host 127.0.0.1 --port 8080
    ```
 
 ### Train

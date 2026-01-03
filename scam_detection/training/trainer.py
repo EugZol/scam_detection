@@ -5,8 +5,8 @@ from lightning.pytorch.loggers import MLFlowLogger
 
 from ..data.datamodule import EmailDataModule
 from ..models.lit_module import EmailClassifier
-from ..tracking.mlflow import log_git_commit, setup_mlflow_tracking
-from .callbacks import PlottingCallback
+from ..tracking.mlflow import cleanup_malformed_experiments, ensure_experiment_exists, log_git_commit, setup_mlflow_tracking
+from .callbacks import PlottingCallback, MLflowPlottingCallback
 
 
 def train_transformer_model(
@@ -16,7 +16,8 @@ def train_transformer_model(
     max_epochs: int = 10,
     patience: int = 3,
     mlflow_experiment: str = "email_classification",
-    mlflow_tracking_uri: str = "http://localhost:5000",
+    mlflow_tracking_uri: str = "http://127.0.0.1:8080",
+    log_every_n_steps: int = 20,
     cpu_threads: int = 20,
 ):
     """Train the transformer model."""
@@ -30,6 +31,12 @@ def train_transformer_model(
 
     # Set up MLflow tracking
     setup_mlflow_tracking(mlflow_tracking_uri)
+    cleanup_malformed_experiments()
+    ensure_experiment_exists(mlflow_experiment)
+
+    # Set the MLflow experiment explicitly
+    import mlflow
+    mlflow.set_experiment(mlflow_experiment)
 
     model = EmailClassifier(
         model_type=model_config.model_type,
@@ -53,6 +60,7 @@ def train_transformer_model(
     )
     early_stopping = EarlyStopping(monitor="val_f1", patience=patience, mode="max")
     plotting_callback = PlottingCallback()
+    mlflow_plotting_callback = MLflowPlottingCallback(log_every_n_steps=log_every_n_steps)
 
     # Enhanced MLflow logger with descriptive run name
     run_name = f"small_transformer_{time.strftime('%Y%m%d_%H%M%S')}"
@@ -60,7 +68,7 @@ def train_transformer_model(
 
     trainer = pl.Trainer(
         max_epochs=max_epochs,
-        callbacks=[checkpoint_callback, early_stopping, plotting_callback],
+        callbacks=[checkpoint_callback, early_stopping, plotting_callback, mlflow_plotting_callback],
         logger=logger,
         # Make sure metrics show up as a time-series in MLflow quickly.
         # (otherwise you may only see epoch-level aggregation)
@@ -113,7 +121,7 @@ def train_transformer_model(
 def train_tfidf_model(
     datamodule: EmailDataModule,
     mlflow_experiment: str = "email_classification",
-    mlflow_tracking_uri: str = "http://localhost:5000",
+    mlflow_tracking_uri: str = "http://127.0.0.1:8080",
 ):
     """Train the TF-IDF baseline model."""
     import time

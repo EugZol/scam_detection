@@ -71,6 +71,7 @@ def train(cfg: DictConfig):
             patience=cfg.train.patience,
             mlflow_experiment=cfg.train.mlflow_experiment,
             mlflow_tracking_uri=cfg.logging.mlflow_tracking_uri,
+            log_every_n_steps=cfg.logging.log_every_n_steps,
             cpu_threads=cfg.train.cpu_threads,
         )
     elif cfg.model.model_type == "tfidf":
