@@ -155,6 +155,7 @@ mlflow.db
 *.h5
 *.pkl
 *.joblib
+models/*
 
 # Data files (managed by DVC)
 *.csv
@@ -165,6 +166,9 @@ mlflow.db
 # Logs
 logs/
 *.log
+
+# Plots (generated during training)
+plots/
 
 # Temporary files
 temp.py

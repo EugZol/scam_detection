@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 from sklearn.metrics import accuracy_score, f1_score
 from torch.optim import AdamW
+from torchmetrics import Accuracy, F1Score
 from transformers import get_linear_schedule_with_warmup
 
 from .baseline import TfidfClassifier
@@ -64,6 +65,15 @@ class EmailClassifier(pl.LightningModule):
 
         self.criterion = nn.CrossEntropyLoss()
 
+        # Initialize torchmetrics for proper validation/test metric calculation
+        # These automatically accumulate across batches and reset each epoch
+        # Use 'multiclass' task since we pass class indices (from argmax), not probabilities
+        if model_type in {"transformer", "small_transformer"}:
+            self.val_accuracy = Accuracy(task="multiclass", num_classes=num_labels)
+            self.val_f1 = F1Score(task="multiclass", num_classes=num_labels, average="macro")
+            self.test_accuracy = Accuracy(task="multiclass", num_classes=num_labels)
+            self.test_f1 = F1Score(task="multiclass", num_classes=num_labels, average="macro")
+
     def forward(self, batch):
         if self.model_type == "transformer":
             outputs = self.model(
@@ -115,8 +125,12 @@ class EmailClassifier(pl.LightningModule):
         if self.model_type in {"transformer", "small_transformer"}:
             loss, logits = self.forward(batch)
             preds = torch.argmax(logits, dim=1)
-            acc = accuracy_score(batch["label"].cpu(), preds.cpu())
-            f1 = f1_score(batch["label"].cpu(), preds.cpu(), average="binary")
+
+            # Update torchmetrics - they accumulate across all batches automatically
+            self.val_accuracy.update(preds, batch["label"])
+            self.val_f1.update(preds, batch["label"])
+
+            # Log loss (average across batches is fine for loss)
             self.log(
                 "val_loss",
                 loss,
@@ -125,21 +139,37 @@ class EmailClassifier(pl.LightningModule):
                 prog_bar=True,
                 logger=True,
             )
+
+            # Log metrics - torchmetrics will compute the final value at epoch end
             self.log(
-                "val_acc", acc, on_step=False, on_epoch=True, prog_bar=True, logger=True
+                "val_acc",
+                self.val_accuracy,
+                on_step=False,
+                on_epoch=True,
+                prog_bar=True,
+                logger=True,
             )
             self.log(
-                "val_f1", f1, on_step=False, on_epoch=True, prog_bar=True, logger=True
+                "val_f1",
+                self.val_f1,
+                on_step=False,
+                on_epoch=True,
+                prog_bar=True,
+                logger=True,
             )
 
     def test_step(self, batch, batch_idx):
         if self.model_type in {"transformer", "small_transformer"}:
             loss, logits = self.forward(batch)
             preds = torch.argmax(logits, dim=1)
-            acc = accuracy_score(batch["label"].cpu(), preds.cpu())
-            f1 = f1_score(batch["label"].cpu(), preds.cpu(), average="binary")
-            self.log("test_acc", acc)
-            self.log("test_f1", f1)
+
+            # Update torchmetrics - they accumulate across all batches automatically
+            self.test_accuracy.update(preds, batch["label"])
+            self.test_f1.update(preds, batch["label"])
+
+            # Log metrics - torchmetrics will compute the final value at epoch end
+            self.log("test_acc", self.test_accuracy, on_step=False, on_epoch=True)
+            self.log("test_f1", self.test_f1, on_step=False, on_epoch=True)
 
     def configure_optimizers(self):
         if self.model_type in {"transformer", "small_transformer"}:

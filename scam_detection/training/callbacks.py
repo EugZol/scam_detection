@@ -145,23 +145,26 @@ class MLflowPlottingCallback(Callback):
         """Collect metrics from training steps and log plots every N steps."""
         self.step_count += 1
 
-        # Collect metrics from logged_metrics (which are logged by the LightningModule)
-        if "train_loss" in trainer.logged_metrics:
-            loss_val = trainer.logged_metrics["train_loss"]
+        # Collect metrics from callback_metrics (which contains step-level metrics)
+        # PyTorch Lightning stores step-level metrics in callback_metrics
+        metrics = trainer.callback_metrics
+
+        if "train_loss" in metrics:
+            loss_val = metrics["train_loss"]
             if hasattr(loss_val, 'item'):
                 self.train_losses.append(loss_val.item())
             else:
                 self.train_losses.append(float(loss_val))
 
-        if "train_acc" in trainer.logged_metrics:
-            acc_val = trainer.logged_metrics["train_acc"]
+        if "train_acc" in metrics:
+            acc_val = metrics["train_acc"]
             if hasattr(acc_val, 'item'):
                 self.train_accs.append(acc_val.item())
             else:
                 self.train_accs.append(float(acc_val))
 
-        if "train_f1" in trainer.logged_metrics:
-            f1_val = trainer.logged_metrics["train_f1"]
+        if "train_f1" in metrics:
+            f1_val = metrics["train_f1"]
             if hasattr(f1_val, 'item'):
                 self.train_f1s.append(f1_val.item())
             else:
