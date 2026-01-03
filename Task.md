@@ -150,3 +150,9 @@ What is advisable to do (+2 points)
 The list of errors is not exhaustive. There are very many ways to do strange things, so try to apply the knowledge gained in the course, as well as your sense of beauty.
 
 P.S. If something is unclear or you want to do something differently \- write in the chat, we'll discuss it. These rules are not dogmas (although in this assignment you must follow them), but rather a set of good techniques that, however, need to be adapted to the task and the situation as a whole.
+
+# Checklist flags
+
+1. No "emails", just "messages"
+2. No printf, only use of proper logging
+3. ...

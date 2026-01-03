@@ -42,38 +42,59 @@ def train(cfg: DictConfig):
             print("Please ensure DVC is properly configured and data is available")
             return
 
-    datamodule = EmailDataModule(
-        csv_path=cfg.data.csv_path,
-        model_type=cfg.data.model_type,
-        tokenizer_name=cfg.data.tokenizer_name,
-        max_length=cfg.data.max_length,
-        batch_size=cfg.data.batch_size,
-        test_size=cfg.data.test_size,
-        val_size=cfg.data.val_size,
-        random_state=cfg.data.random_state,
-    )
+    # Prepare datamodule kwargs based on model type
+    datamodule_kwargs = {
+        "csv_path": cfg.data.csv_path,
+        "model_type": cfg.model.model_type,
+        "batch_size": cfg.data.batch_size,
+        "test_size": cfg.data.test_size,
+        "val_size": cfg.data.val_size,
+        "random_state": cfg.data.random_state,
+        "num_workers": cfg.data.num_workers,
+    }
 
-    if cfg.data.model_type == "transformer":
+    # Add transformer-specific parameters if using transformer model
+    if cfg.model.model_type in {"transformer", "small_transformer"}:
+        datamodule_kwargs["tokenizer_name"] = cfg.model.tokenizer_name
+        datamodule_kwargs["max_length"] = cfg.model.max_length
+
+    datamodule = EmailDataModule(**datamodule_kwargs)
+
+    if cfg.model.model_type in {"transformer", "small_transformer"}:
+        # NOTE: we keep the name `train_transformer_model` for compatibility,
+        # but it now trains the scratch-based small transformer.
         train_transformer_model(
             datamodule=datamodule,
-            model_name=cfg.model.model_name,
+            model_config=cfg.model,
             learning_rate=cfg.train.learning_rate,
             max_epochs=cfg.train.max_epochs,
             patience=cfg.train.patience,
             mlflow_experiment=cfg.train.mlflow_experiment,
+            mlflow_tracking_uri=cfg.logging.mlflow_tracking_uri,
+            cpu_threads=cfg.train.cpu_threads,
         )
-    elif cfg.data.model_type == "tfidf":
-        train_tfidf_model(datamodule, cfg.train.mlflow_experiment)
+    elif cfg.model.model_type == "tfidf":
+        train_tfidf_model(
+            datamodule,
+            cfg.train.mlflow_experiment,
+            cfg.logging.mlflow_tracking_uri,
+        )
 
 
 def main():
     """
     Main CLI entry point.
     """
+    import sys
+
+    # Extract Hydra overrides from command line (e.g., model=baseline)
+    # Skip the first argument (script name)
+    overrides = sys.argv[1:]
+
     GlobalHydra.instance().clear()
     config_dir = Path(__file__).parent.parent / "configs"
     initialize_config_dir(config_dir=str(config_dir.absolute()), version_base=None)
-    cfg = compose(config_name="config")
+    cfg = compose(config_name="config", overrides=overrides)
     print(OmegaConf.to_yaml(cfg))
 
     # For now, just train
@@ -81,4 +102,5 @@ def main():
 
 
 if __name__ == "__main__":
-    fire.Fire(main)
+    # Don't use Fire here - we want to handle args ourselves for Hydra
+    main()

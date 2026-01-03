@@ -53,18 +53,29 @@ Key features:
 
 To train the model:
 
-1. **For Transformer model:**
+1. **For Transformer model (default):**
    ```bash
-   uv run scam_detection
+   uv run python -m scam_detection.commands
    ```
-   This uses the default config (transformer model).
 
 2. **For TF-IDF baseline:**
-   Modify `configs/config.yaml` to use `model: baseline.yaml`, then run the same command.
+   ```bash
+   uv run python -m scam_detection.commands model=baseline
+   ```
+
+3. **Selecting models:**
+   Use Hydra's override syntax to switch between model configurations:
+   - `model=small_transformer` - Small transformer model (default)
+   - `model=baseline` - TF-IDF baseline model
+   
+   You can also override other parameters:
+   ```bash
+   uv run python -m scam_detection.commands model=baseline train.max_epochs=10 data.batch_size=32
+   ```
 
 The training process includes:
-- Data loading and preprocessing
-- Model training with PyTorch Lightning
+- Data loading and preprocessing (automatically pulls from DVC if needed)
+- Model training with PyTorch Lightning (or scikit-learn for baseline)
 - Validation and early stopping
 - Logging metrics to MLflow
 - Saving checkpoints

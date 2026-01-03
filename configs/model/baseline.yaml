@@ -1,1 +1,2 @@
+# TF-IDF Baseline Model Configuration
 model_type: tfidf

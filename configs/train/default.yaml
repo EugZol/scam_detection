@@ -1,6 +1,7 @@
 learning_rate: 2e-5
 weight_decay: 0.01
 warmup_steps: 0
-max_epochs: 5
+max_epochs: 1
 patience: 3
 mlflow_experiment: email_classification
+cpu_threads: 20

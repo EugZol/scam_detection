@@ -1,4 +1,5 @@
 import lightning.pytorch as pl
+import torch
 from lightning.pytorch.callbacks import EarlyStopping, ModelCheckpoint
 from lightning.pytorch.loggers import MLFlowLogger
 
@@ -10,22 +11,35 @@ from .callbacks import PlottingCallback
 
 def train_transformer_model(
     datamodule: EmailDataModule,
-    model_name: str = "distilbert-base-uncased",
+    model_config,
     learning_rate: float = 2e-5,
     max_epochs: int = 10,
     patience: int = 3,
     mlflow_experiment: str = "email_classification",
     mlflow_tracking_uri: str = "http://localhost:5000",
+    cpu_threads: int = 20,
 ):
     """Train the transformer model."""
     import time
+
+    # Configure PyTorch for multi-core CPU training
+    torch.set_num_threads(cpu_threads)
+    torch.set_num_interop_threads(cpu_threads)
+
+    print(f"Configured PyTorch to use {cpu_threads} CPU threads for training")
 
     # Set up MLflow tracking
     setup_mlflow_tracking(mlflow_tracking_uri)
 
     model = EmailClassifier(
-        model_type="transformer",
-        model_name=model_name,
+        model_type=model_config.model_type,
+        tokenizer_name=model_config.tokenizer_name,
+        max_length=model_config.max_length,
+        small_d_model=model_config.d_model,
+        small_n_heads=model_config.n_heads,
+        small_n_layers=model_config.n_layers,
+        small_ffn_dim=model_config.ffn_dim,
+        small_dropout=model_config.dropout,
         learning_rate=learning_rate,
         max_epochs=max_epochs,
     )
@@ -41,12 +55,8 @@ def train_transformer_model(
     plotting_callback = PlottingCallback()
 
     # Enhanced MLflow logger with descriptive run name
-    run_name = (
-        f"transformer_{model_name.replace('/', '_')}_{time.strftime('%Y%m%d_%H%M%S')}"
-    )
-    logger = MLFlowLogger(
-        experiment_name=mlflow_experiment, run_name=run_name, log_model=True
-    )
+    run_name = f"small_transformer_{time.strftime('%Y%m%d_%H%M%S')}"
+    logger = MLFlowLogger(experiment_name=mlflow_experiment, run_name=run_name)
 
     trainer = pl.Trainer(
         max_epochs=max_epochs,
@@ -62,17 +72,23 @@ def train_transformer_model(
     datamodule.setup()
     train_samples = len(datamodule.train_dataset)
     val_samples = len(datamodule.val_dataset)
-
     trainer.logger.log_hyperparams(
         {
-            "model_type": "transformer",
-            "model_name": model_name,
+            "model_type": model_config.model_type,
+            "tokenizer_name": model_config.tokenizer_name,
             "task": "email_phishing_detection",
             "framework": "pytorch_lightning",
             "train_samples": train_samples,
             "val_samples": val_samples,
-            "max_length": datamodule.max_length,
+            "max_length": model_config.max_length,
             "batch_size": datamodule.batch_size,
+            "num_workers": datamodule.num_workers,
+            "cpu_threads": cpu_threads,
+            "d_model": model_config.d_model,
+            "n_heads": model_config.n_heads,
+            "n_layers": model_config.n_layers,
+            "ffn_dim": model_config.ffn_dim,
+            "dropout": model_config.dropout,
         }
     )
 
@@ -81,10 +97,13 @@ def train_transformer_model(
     # Log git commit after training starts (when MLflow run is active)
     log_git_commit()
 
-    # Log final model checkpoint
-    trainer.logger.log_artifact(
-        checkpoint_callback.best_model_path, "best_model_checkpoint"
-    )
+    # Log final model checkpoint (best ckpt path) to MLflow artifacts
+    if checkpoint_callback.best_model_path:
+        trainer.logger.experiment.log_artifact(
+            trainer.logger.run_id,
+            checkpoint_callback.best_model_path,
+            artifact_path="best_model_checkpoint",
+        )
 
     trainer.test(model, datamodule)
 
@@ -92,7 +111,9 @@ def train_transformer_model(
 
 
 def train_tfidf_model(
-    datamodule: EmailDataModule, mlflow_experiment: str = "email_classification"
+    datamodule: EmailDataModule,
+    mlflow_experiment: str = "email_classification",
+    mlflow_tracking_uri: str = "http://localhost:5000",
 ):
     """Train the TF-IDF baseline model."""
     import time
@@ -100,6 +121,9 @@ def train_tfidf_model(
     import mlflow
     import mlflow.sklearn
     from sklearn.metrics import accuracy_score, f1_score
+
+    # Set up MLflow tracking
+    setup_mlflow_tracking(mlflow_tracking_uri)
 
     # Set the MLflow experiment (creates if doesn't exist)
     mlflow.set_experiment(mlflow_experiment)

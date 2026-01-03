@@ -10,7 +10,10 @@ from scam_detection.models.lit_module import EmailClassifier
 
 
 def export_to_onnx(
-    model_path: str, onnx_path: str, tokenizer_name: str = "distilbert-base-uncased"
+    model_path: str,
+    onnx_path: str,
+    tokenizer_name: str = "bert-base-uncased",
+    model_type: str = "small_transformer",
 ):
     """
     Export PyTorch model to ONNX.
@@ -21,7 +24,9 @@ def export_to_onnx(
         tokenizer_name: Tokenizer name
     """
     # Load model
-    model = EmailClassifier.load_from_checkpoint(model_path, model_type="transformer")
+    model = EmailClassifier.load_from_checkpoint(
+        model_path, model_type=model_type, tokenizer_name=tokenizer_name
+    )
 
     # Load tokenizer
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
@@ -35,6 +40,8 @@ def export_to_onnx(
         return_tensors="pt",
     )
 
+    model.eval()
+
     # Export to ONNX
     torch.onnx.export(
         model.model,
@@ -43,11 +50,11 @@ def export_to_onnx(
         input_names=["input_ids", "attention_mask"],
         output_names=["logits"],
         dynamic_axes={
-            "input_ids": {0: "batch_size"},
-            "attention_mask": {0: "batch_size"},
+            "input_ids": {0: "batch_size", 1: "seq_len"},
+            "attention_mask": {0: "batch_size", 1: "seq_len"},
             "logits": {0: "batch_size"},
         },
-        opset_version=11,
+        opset_version=13,
     )
 
     print(f"Model exported to {onnx_path}")
@@ -56,8 +63,17 @@ def export_to_onnx(
 if __name__ == "__main__":
     import sys
 
-    if len(sys.argv) != 4:
-        print("Usage: python export_onnx.py <model_path> <onnx_path> <tokenizer_name>")
+    if len(sys.argv) not in {4, 5}:
+        print(
+            "Usage: python export_onnx.py <model_path> <onnx_path> <tokenizer_name> "
+            "[model_type]"
+        )
         sys.exit(1)
 
-    export_to_onnx(sys.argv[1], sys.argv[2], sys.argv[3])
+    model_type = sys.argv[4] if len(sys.argv) == 5 else "small_transformer"
+    export_to_onnx(
+        sys.argv[1],
+        sys.argv[2],
+        sys.argv[3],
+        model_type=model_type,
+    )

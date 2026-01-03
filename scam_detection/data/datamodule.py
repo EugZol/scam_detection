@@ -21,6 +21,7 @@ class EmailDataModule(pl.LightningDataModule):
         test_size: float = 0.2,
         val_size: float = 0.1,
         random_state: int = 42,
+        num_workers: int = 0,
     ):
         super().__init__()
         self.csv_path = csv_path
@@ -31,6 +32,7 @@ class EmailDataModule(pl.LightningDataModule):
         self.test_size = test_size
         self.val_size = val_size
         self.random_state = random_state
+        self.num_workers = num_workers
 
         self.tokenizer = None
         self.vectorizer = None
@@ -54,7 +56,7 @@ class EmailDataModule(pl.LightningDataModule):
             stratify=train_val_df["label"],
         )
 
-        if self.model_type == "transformer":
+        if self.model_type in {"transformer", "small_transformer"}:
             self.tokenizer = AutoTokenizer.from_pretrained(self.tokenizer_name)
             self.train_dataset = EmailDataset(
                 train_df["text"].tolist(),
@@ -98,10 +100,23 @@ class EmailDataModule(pl.LightningDataModule):
             )
 
     def train_dataloader(self):
-        return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True)
+        return DataLoader(
+            self.train_dataset,
+            batch_size=self.batch_size,
+            shuffle=True,
+            num_workers=self.num_workers,
+        )
 
     def val_dataloader(self):
-        return DataLoader(self.val_dataset, batch_size=self.batch_size)
+        return DataLoader(
+            self.val_dataset,
+            batch_size=self.batch_size,
+            num_workers=self.num_workers,
+        )
 
     def test_dataloader(self):
-        return DataLoader(self.test_dataset, batch_size=self.batch_size)
+        return DataLoader(
+            self.test_dataset,
+            batch_size=self.batch_size,
+            num_workers=self.num_workers,
+        )

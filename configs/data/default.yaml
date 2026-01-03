@@ -1,8 +1,6 @@
 csv_path: data/Phishing_Email.csv
-model_type: transformer
-tokenizer_name: distilbert-base-uncased
-max_length: 512
 batch_size: 16
 test_size: 0.2
 val_size: 0.1
 random_state: 42
+num_workers: 20

@@ -1,46 +1,11 @@
 # Global settings
+defaults:
+  - model: small_transformer
+  - data: default
+  - train: default
+  - logging: default
+  - _self_
+
 seed: 42
 experiment_name: email_classification
 output_dir: outputs
-
-data:
-  csv_path: data/Phishing_Email.csv
-  model_type: tfidf
-  tokenizer_name: distilbert-base-uncased
-  max_length: 512
-  batch_size: 16
-  test_size: 0.2
-  val_size: 0.1
-  random_state: 42
-
-model:
-  model_type: tfidf
-  model_name: distilbert-base-uncased
-
-train:
-  learning_rate: 2e-5
-  weight_decay: 0.01
-  warmup_steps: 0
-  max_epochs: 5
-  patience: 3
-  mlflow_experiment: email_classification
-
-eval:
-  model_path: models/checkpoints/best.ckpt
-
-infer:
-  model_path: models/onnx/model.onnx
-  input_sample: This is a test email.
-
-export:
-  onnx_path: models/onnx/model.onnx
-
-serve:
-  host: 0.0.0.0
-  port: 8000
-
-logging:
-  mlflow_tracking_uri: http://localhost:5000
-  log_model: true
-  log_params: true
-  log_metrics: true
