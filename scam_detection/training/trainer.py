@@ -24,15 +24,19 @@ def train_transformer_model(
     mlflow_tracking_uri: str = "http://127.0.0.1:8080",
     log_every_n_steps: int = 20,
     cpu_threads: int = 20,
+    fast_dev_run: int = 0,
+    log_model: bool = True,
 ):
     """Train the transformer model."""
     import time
 
     # Configure PyTorch for multi-core CPU training
-    torch.set_num_threads(cpu_threads)
-    torch.set_num_interop_threads(cpu_threads)
-
-    print(f"Configured PyTorch to use {cpu_threads} CPU threads for training")
+    try:
+        torch.set_num_threads(cpu_threads)
+        torch.set_num_interop_threads(cpu_threads)
+        print(f"Configured PyTorch to use {cpu_threads} CPU threads for training")
+    except RuntimeError:
+        print("PyTorch threads already configured, skipping")
 
     # Set up MLflow tracking
     setup_mlflow_tracking(mlflow_tracking_uri)
@@ -74,20 +78,25 @@ def train_transformer_model(
     run_name = f"small_transformer_{time.strftime('%Y%m%d_%H%M%S')}"
     logger = MLFlowLogger(experiment_name=mlflow_experiment, run_name=run_name)
 
-    trainer = pl.Trainer(
-        max_epochs=max_epochs,
-        callbacks=[
+    # Build trainer kwargs
+    trainer_kwargs = {
+        "max_epochs": max_epochs,
+        "callbacks": [
             checkpoint_callback,
             early_stopping,
             plotting_callback,
             mlflow_plotting_callback,
         ],
-        logger=logger,
-        # Make sure metrics show up as a time-series in MLflow quickly.
-        # (otherwise you may only see epoch-level aggregation)
-        log_every_n_steps=1,
-        accelerator="cpu",
-    )
+        "logger": logger,
+        "log_every_n_steps": 1,
+        "accelerator": "cpu",
+    }
+
+    # Add fast_dev_run if specified (for quick testing)
+    if fast_dev_run > 0:
+        trainer_kwargs["fast_dev_run"] = fast_dev_run
+
+    trainer = pl.Trainer(**trainer_kwargs)
 
     # Log additional metadata before training
     datamodule.setup()
@@ -113,10 +122,12 @@ def train_transformer_model(
         }
     )
 
-    trainer.fit(model, datamodule)
+    # Log git commit before training starts (when MLflow run is active)
+    # Skip if fast_dev_run is enabled (logging is suppressed in that mode)
+    if fast_dev_run == 0:
+        log_git_commit()
 
-    # Log git commit after training starts (when MLflow run is active)
-    log_git_commit()
+    trainer.fit(model, datamodule)
 
     # Log final model checkpoint (best ckpt path) to MLflow artifacts
     if checkpoint_callback.best_model_path:
@@ -128,15 +139,32 @@ def train_transformer_model(
 
     trainer.test(model, datamodule)
 
+    # Log model to MLflow (can be slow, so optional)
+    if log_model and fast_dev_run == 0:
+        import mlflow.pytorch
+
+        mlflow.pytorch.log_model(
+            model,
+            "model",
+            registered_model_name=model_config.model_type,
+        )
+
     return model
 
 
 def train_tfidf_model(
     datamodule: MessageDataModule,
+    model_type: str,
     mlflow_experiment: str = "message_classification",
     mlflow_tracking_uri: str = "http://127.0.0.1:8080",
+    log_model: bool = True,
 ):
-    """Train the TF-IDF baseline model."""
+    """Train the TF-IDF baseline model.
+
+    Args:
+        log_model: Whether to log model to MLflow (can be slow, disable in tests).
+        model_type: Model type identifier used for registered model name.
+    """
     import time
 
     import mlflow
@@ -207,11 +235,12 @@ def train_tfidf_model(
         mlflow.log_metric("val_f1_score", f1)
         mlflow.log_metric("training_time_seconds", training_time)
 
-        # Log model with descriptive name
-        mlflow.sklearn.log_model(
-            model,
-            "tfidf_logistic_regression_model",
-            registered_model_name="ScamMessageDetector_TFIDF",
-        )
+        # Log model to MLflow (can be slow, so optional)
+        if log_model:
+            mlflow.sklearn.log_model(
+                model,
+                "model",
+                registered_model_name=model_type,
+            )
 
     return model

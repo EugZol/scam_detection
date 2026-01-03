@@ -133,3 +133,11 @@ curl -X POST http://127.0.0.1:8000/invocations \
 ```
 
 The model URI can be found in the MLflow UI after training at `http://127.0.0.1:8080`.
+
+### Test suite
+
+```bash
+uv run pytest
+```
+
+Test suite includes some smoke tests and CLI interface tests.

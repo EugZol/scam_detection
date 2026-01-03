@@ -63,7 +63,13 @@ def train(cfg: DictConfig):
 
     datamodule = MessageDataModule(**datamodule_kwargs)
 
+    # Get common parameters from config
+    log_model = cfg.train.get("log_model", True)
+
     if cfg.model.model_type == "small_transformer":
+        # Get fast_dev_run from config if it exists, otherwise default to 0
+        fast_dev_run = cfg.train.get("fast_dev_run", 0)
+
         train_transformer_model(
             datamodule=datamodule,
             model_config=cfg.model,
@@ -74,12 +80,16 @@ def train(cfg: DictConfig):
             mlflow_tracking_uri=cfg.logging.mlflow_tracking_uri,
             log_every_n_steps=cfg.logging.log_every_n_steps,
             cpu_threads=cfg.train.cpu_threads,
+            fast_dev_run=fast_dev_run,
+            log_model=log_model,
         )
     elif cfg.model.model_type == "tfidf":
         train_tfidf_model(
-            datamodule,
-            cfg.train.mlflow_experiment,
-            cfg.logging.mlflow_tracking_uri,
+            datamodule=datamodule,
+            model_type=cfg.model.model_type,
+            mlflow_experiment=cfg.train.mlflow_experiment,
+            mlflow_tracking_uri=cfg.logging.mlflow_tracking_uri,
+            log_model=log_model,
         )
 
 

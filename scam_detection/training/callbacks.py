@@ -100,12 +100,15 @@ class PlottingCallback(Callback):
 
     def on_train_end(self, trainer, pl_module):
         # Save final plots (overwrite without epoch suffix)
+        if not self.train_losses:
+            return  # No data to plot
+
         epochs = range(1, len(self.train_losses) + 1)
 
         # Loss plot
         plt.figure(figsize=(10, 6))
         plt.plot(epochs, self.train_losses, "b-", label="Training Loss")
-        if self.val_losses:
+        if self.val_losses and len(self.val_losses) == len(self.train_losses):
             plt.plot(epochs, self.val_losses, "r-", label="Validation Loss")
         plt.title("Training and Validation Loss")
         plt.xlabel("Epochs")
@@ -115,28 +118,32 @@ class PlottingCallback(Callback):
         plt.close()
 
         # Accuracy plot
-        plt.figure(figsize=(10, 6))
-        plt.plot(epochs, self.train_accs, "b-", label="Training Accuracy")
-        if self.val_accs:
-            plt.plot(epochs, self.val_accs, "r-", label="Validation Accuracy")
-        plt.title("Training and Validation Accuracy")
-        plt.xlabel("Epochs")
-        plt.ylabel("Accuracy")
-        plt.legend()
-        plt.savefig(self.save_dir / "accuracy.png")
-        plt.close()
+        if self.train_accs:
+            plt.figure(figsize=(10, 6))
+            acc_epochs = range(1, len(self.train_accs) + 1)
+            plt.plot(acc_epochs, self.train_accs, "b-", label="Training Accuracy")
+            if self.val_accs and len(self.val_accs) == len(self.train_accs):
+                plt.plot(acc_epochs, self.val_accs, "r-", label="Validation Accuracy")
+            plt.title("Training and Validation Accuracy")
+            plt.xlabel("Epochs")
+            plt.ylabel("Accuracy")
+            plt.legend()
+            plt.savefig(self.save_dir / "accuracy.png")
+            plt.close()
 
         # F1 Score plot
-        plt.figure(figsize=(10, 6))
-        plt.plot(epochs, self.train_f1s, "b-", label="Training F1")
-        if self.val_f1s:
-            plt.plot(epochs, self.val_f1s, "r-", label="Validation F1")
-        plt.title("Training and Validation F1 Score")
-        plt.xlabel("Epochs")
-        plt.ylabel("F1 Score")
-        plt.legend()
-        plt.savefig(self.save_dir / "f1_score.png")
-        plt.close()
+        if self.train_f1s:
+            plt.figure(figsize=(10, 6))
+            f1_epochs = range(1, len(self.train_f1s) + 1)
+            plt.plot(f1_epochs, self.train_f1s, "b-", label="Training F1")
+            if self.val_f1s and len(self.val_f1s) == len(self.train_f1s):
+                plt.plot(f1_epochs, self.val_f1s, "r-", label="Validation F1")
+            plt.title("Training and Validation F1 Score")
+            plt.xlabel("Epochs")
+            plt.ylabel("F1 Score")
+            plt.legend()
+            plt.savefig(self.save_dir / "f1_score.png")
+            plt.close()
 
 
 class MLflowPlottingCallback(Callback):

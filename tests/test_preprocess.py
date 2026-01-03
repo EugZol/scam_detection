@@ -12,8 +12,9 @@ def test_clean_text():
 
 
 def test_load_and_preprocess_data():
-    # Mock test
-    df = load_and_preprocess_data("data/Phishing_Email.csv")
+    # Test with tiny dataset
+    df = load_and_preprocess_data("tests/fixtures/tiny_dataset.csv")
     assert len(df) > 0
     assert "text" in df.columns
     assert "label" in df.columns
+    assert df["label"].isin([0, 1]).all()
