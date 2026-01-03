@@ -6,7 +6,6 @@ from lightning.pytorch.loggers import MLFlowLogger
 from ..data.datamodule import MessageDataModule
 from ..models.lit_module import MessageClassifier
 from ..tracking.mlflow import (
-    cleanup_malformed_experiments,
     ensure_experiment_exists,
     log_git_commit,
     setup_mlflow_tracking,
@@ -40,7 +39,6 @@ def train_transformer_model(
 
     # Set up MLflow tracking
     setup_mlflow_tracking(mlflow_tracking_uri)
-    cleanup_malformed_experiments()
     ensure_experiment_exists(mlflow_experiment)
 
     # Set the MLflow experiment explicitly

@@ -23,6 +23,7 @@ Key features:
    - Python 3.9+
    - Git
    - uv package manager
+   - MLflow server, running at 127.0.0.1:8080 (configurable)
 
 2. **Clone the repository:**
    ```bash
@@ -58,7 +59,7 @@ Train the model using the main command interface:
 # Default: Small transformer model
 uv run python -m scam_detection.commands train
 
-# TF-IDF baseline model
+# TF-IDF baseline logistic regression
 uv run python -m scam_detection.commands train model=baseline
 
 # Override training parameters

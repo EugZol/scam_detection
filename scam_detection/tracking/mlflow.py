@@ -78,40 +78,6 @@ def ensure_experiment_exists(experiment_name: str):
             print(f"Failed to create experiment: {e2}")
 
 
-def cleanup_malformed_experiments():
-    """Clean up malformed experiments in MLflow."""
-    try:
-        import shutil
-        from pathlib import Path
-
-        # Get MLflow tracking URI
-        tracking_uri = mlflow.get_tracking_uri()
-
-        # Check both local mlruns and the tracking URI location
-        mlruns_paths = []
-        if "file:" in tracking_uri or not tracking_uri.startswith("http"):
-            # Local filesystem tracking
-            mlruns_path = Path(tracking_uri.replace("file:", "").replace("file://", ""))
-            mlruns_paths.append(mlruns_path)
-
-        # Always check local mlruns directory too
-        local_mlruns = Path("./mlruns")
-        if local_mlruns not in mlruns_paths:
-            mlruns_paths.append(local_mlruns)
-
-        for mlruns_path in mlruns_paths:
-            if mlruns_path.exists():
-                print(f"Checking for malformed experiments in {mlruns_path}")
-                for exp_dir in mlruns_path.iterdir():
-                    if exp_dir.is_dir() and exp_dir.name.isdigit():
-                        meta_file = exp_dir / "meta.yaml"
-                        if not meta_file.exists():
-                            print(f"Removing malformed experiment directory: {exp_dir}")
-                            shutil.rmtree(exp_dir, ignore_errors=True)
-    except Exception as e:
-        print(f"Warning: Could not cleanup malformed experiments: {e}")
-
-
 def log_git_commit():
     """Log the current git commit hash to MLflow."""
     try:

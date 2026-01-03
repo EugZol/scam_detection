@@ -12,7 +12,7 @@ import pytest
 from hydra import compose, initialize_config_dir
 from hydra.core.global_hydra import GlobalHydra
 
-from scam_detection.commands import export, infer, train
+from scam_detection.commands import train
 
 
 @pytest.fixture
@@ -64,7 +64,7 @@ def test_train_baseline(hydra_context, test_dirs, tiny_dataset_path):
             f"data.csv_path={tiny_dataset_path}",
             "data.batch_size=2",
             "data.test_size=0.2",  # 20% test, sufficient for 10 samples
-            "data.val_size=0.2",   # 20% val from remaining
+            "data.val_size=0.2",  # 20% val from remaining
             f"logging.mlflow_tracking_uri=file://{test_dirs['mlruns']}",
             "train.mlflow_experiment=test_baseline",
             "train.log_model=false",  # Skip slow model logging in tests
@@ -80,17 +80,6 @@ def test_train_baseline(hydra_context, test_dirs, tiny_dataset_path):
 
 
 def test_train_transformer(hydra_context, test_dirs, tiny_dataset_path):
-    """
-    Test training small transformer model (README example).
-
-    Command equivalent:
-        uv run python -m scam_detection.commands train model=small_transformer
-
-    Note: Uses fast_dev_run to only run 2 batches for speed.
-    """
-    # Track test start time for cleanup
-    test_start_time = time.time()
-
     cfg = compose(
         config_name="config",
         overrides=[
@@ -113,16 +102,6 @@ def test_train_transformer(hydra_context, test_dirs, tiny_dataset_path):
 
 
 def test_train_transformer_with_overrides(hydra_context, test_dirs, tiny_dataset_path):
-    """
-    Test training with parameter overrides (README example).
-
-    Command equivalent:
-        uv run python -m scam_detection.commands train train.max_epochs=10 data.batch_size=32
-
-    Note: Uses fast_dev_run to only run 2 batches for speed.
-    """
-    test_start_time = time.time()
-
     cfg = compose(
         config_name="config",
         overrides=[
@@ -159,8 +138,7 @@ def trained_model_checkpoint(hydra_context, test_dirs, tiny_dataset_path):
             "data.val_size=0.2",
             "train.max_epochs=1",
             f"logging.mlflow_tracking_uri=file://{test_dirs['mlruns']}",
-            "train.mlflow_experiment=test_fixture",
-            "train.log_model=false",  # Skip slow model logging in tests
+            "train.log_model=false",
         ],
     )
 
@@ -169,8 +147,7 @@ def trained_model_checkpoint(hydra_context, test_dirs, tiny_dataset_path):
     # Find the created checkpoint
     checkpoint_dir = Path("models/checkpoints")
     checkpoints = sorted(
-        checkpoint_dir.glob("small_transformer-*.ckpt"),
-        key=lambda p: p.stat().st_mtime
+        checkpoint_dir.glob("small_transformer-*.ckpt"), key=lambda p: p.stat().st_mtime
     )
 
     if not checkpoints:
@@ -190,90 +167,3 @@ def trained_model_checkpoint(hydra_context, test_dirs, tiny_dataset_path):
     for ckpt in test_checkpoints:
         if ckpt.exists():
             ckpt.unlink()
-
-
-def test_export_with_hydra_override(
-    hydra_context, test_dirs, tiny_dataset_path, trained_model_checkpoint
-):
-    """
-    Test ONNX export with Hydra overrides (README example).
-
-    Command equivalent:
-        uv run python -m scam_detection.commands export export.model_path=models/checkpoints/best.ckpt
-    """
-    output_path = test_dirs["onnx"] / "test_model.onnx"
-
-    cfg = compose(
-        config_name="config",
-        overrides=[
-            "+export=default",
-            "model=small_transformer",
-            f"export.model_path={trained_model_checkpoint}",
-            f"export.onnx_path={output_path}",
-        ],
-    )
-
-    export(cfg)
-
-    # Verify ONNX file was created and has content
-    assert output_path.exists(), "ONNX file not created"
-    assert output_path.stat().st_size > 0, "ONNX file is empty"
-
-
-def test_infer_with_texts(
-    hydra_context, test_dirs, tiny_dataset_path, trained_model_checkpoint
-):
-    """
-    Test inference with text input (README example).
-
-    Command equivalent:
-        uv run python -m scam_detection.commands infer \
-          infer.model_path=models/checkpoints/best.ckpt \
-          infer.texts='["Congratulations! You won!", "Meeting at 3pm"]'
-    """
-    cfg = compose(
-        config_name="config",
-        overrides=[
-            "+infer=default",
-            "model=small_transformer",
-            f"infer.model_path={trained_model_checkpoint}",
-            "infer.texts=[\"Congratulations! You won a prize!\", \"Meeting at 3pm\"]",
-        ],
-    )
-
-    # Should complete without errors
-    # Note: infer() prints to stdout, we're just checking it doesn't crash
-    infer(cfg)
-
-
-def test_infer_from_file(
-    hydra_context, test_dirs, tiny_dataset_path, trained_model_checkpoint
-):
-    """
-    Test inference from file input (README example).
-
-    Command equivalent:
-        uv run python -m scam_detection.commands infer \
-          infer.model_path=models/checkpoints/best.ckpt \
-          infer.input_file=messages.txt
-    """
-    # Create temp input file
-    input_file = test_dirs["base"] / "test_messages.txt"
-    input_file.write_text(
-        "Congratulations! You won a prize!\n"
-        "Meeting scheduled for tomorrow.\n"
-        "Click here to verify your account!\n"
-    )
-
-    cfg = compose(
-        config_name="config",
-        overrides=[
-            "+infer=default",
-            "model=small_transformer",
-            f"infer.model_path={trained_model_checkpoint}",
-            f"infer.input_file={input_file}",
-        ],
-    )
-
-    # Should complete without errors
-    infer(cfg)

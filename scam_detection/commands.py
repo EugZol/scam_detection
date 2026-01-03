@@ -9,6 +9,7 @@ from transformers import AutoTokenizer
 from .data.datamodule import MessageDataModule
 from .inference.predictor import Predictor
 from .models.lit_module import MessageClassifier
+from .tracking.mlflow import setup_mlflow_tracking
 from .training.trainer import train_tfidf_model, train_transformer_model
 
 
@@ -120,6 +121,9 @@ def infer(cfg: DictConfig):
     model_type = cfg.model.model_type
     tokenizer_name = cfg.model.get("tokenizer_name", "distilbert-base-uncased")
 
+    mlflow_tracking_uri = cfg.logging.get("mlflow_tracking_uri", "./mlruns")
+    setup_mlflow_tracking(mlflow_tracking_uri)
+
     # Load model
     print(f"Loading model from {model_path}...")
     model = MessageClassifier.load_from_checkpoint(
@@ -201,6 +205,9 @@ def export(cfg: DictConfig):
     model_type = cfg.model.model_type
     tokenizer_name = cfg.model.get("tokenizer_name", "distilbert-base-uncased")
     max_length = cfg.model.get("max_length", 512)
+
+    mlflow_tracking_uri = cfg.logging.get("mlflow_tracking_uri", "./mlruns")
+    setup_mlflow_tracking(mlflow_tracking_uri)
 
     # Load model
     print(f"Loading model from {model_path}...")
