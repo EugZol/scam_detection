@@ -10,7 +10,6 @@ from .baseline import TfidfClassifier
 from .transformer import (
     SmallTransformerConfig,
     SmallTransformerForSequenceClassification,
-    TransformerClassifier,
 )
 
 
@@ -19,7 +18,7 @@ class MessageClassifier(pl.LightningModule):
 
     def __init__(
         self,
-        model_type: str = "transformer",
+        model_type: str = "small_transformer",
         model_name: str = "distilbert-base-uncased",
         tokenizer_name: str = "bert-base-uncased",
         num_labels: int = 2,
@@ -39,10 +38,7 @@ class MessageClassifier(pl.LightningModule):
         self.save_hyperparameters()
 
         self.model_type = model_type
-        if model_type == "transformer":
-            # Pretrained HuggingFace model (legacy option)
-            self.model = TransformerClassifier(model_name, num_labels)
-        elif model_type == "small_transformer":
+        if model_type == "small_transformer":
             # Scratch-trained transformer encoder
             from transformers import AutoTokenizer
 
@@ -69,7 +65,7 @@ class MessageClassifier(pl.LightningModule):
         # These automatically accumulate across batches and reset each epoch
         # Use 'multiclass' task since we pass class indices (from argmax),
         # not probabilities
-        if model_type in {"transformer", "small_transformer"}:
+        if model_type == "small_transformer":
             self.val_accuracy = Accuracy(task="multiclass", num_classes=num_labels)
             self.val_f1 = F1Score(
                 task="multiclass",
@@ -84,13 +80,6 @@ class MessageClassifier(pl.LightningModule):
             )
 
     def forward(self, batch):
-        if self.model_type == "transformer":
-            outputs = self.model(
-                input_ids=batch["input_ids"],
-                attention_mask=batch["attention_mask"],
-                labels=batch["label"],
-            )
-            return outputs.loss, outputs.logits
         if self.model_type == "small_transformer":
             logits = self.model(
                 input_ids=batch["input_ids"],
@@ -102,7 +91,7 @@ class MessageClassifier(pl.LightningModule):
             return None, self.model.predict_proba(batch["features"])
 
     def training_step(self, batch, batch_idx):
-        if self.model_type in {"transformer", "small_transformer"}:
+        if self.model_type == "small_transformer":
             loss, logits = self.forward(batch)
             preds = torch.argmax(logits, dim=1)
             acc = accuracy_score(batch["label"].cpu(), preds.cpu())
@@ -131,7 +120,7 @@ class MessageClassifier(pl.LightningModule):
             return torch.tensor(0.0)
 
     def validation_step(self, batch, batch_idx):
-        if self.model_type in {"transformer", "small_transformer"}:
+        if self.model_type == "small_transformer":
             loss, logits = self.forward(batch)
             preds = torch.argmax(logits, dim=1)
 
@@ -168,7 +157,7 @@ class MessageClassifier(pl.LightningModule):
             )
 
     def test_step(self, batch, batch_idx):
-        if self.model_type in {"transformer", "small_transformer"}:
+        if self.model_type == "small_transformer":
             loss, logits = self.forward(batch)
             preds = torch.argmax(logits, dim=1)
 
@@ -181,7 +170,7 @@ class MessageClassifier(pl.LightningModule):
             self.log("test_f1", self.test_f1, on_step=False, on_epoch=True)
 
     def configure_optimizers(self):
-        if self.model_type in {"transformer", "small_transformer"}:
+        if self.model_type == "small_transformer":
             optimizer = AdamW(
                 self.parameters(),
                 lr=self.hparams.learning_rate,

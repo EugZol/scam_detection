@@ -59,7 +59,7 @@ def train_transformer_model(
 
     checkpoint_callback = ModelCheckpoint(
         dirpath="models/checkpoints",
-        filename="transformer-{epoch:02d}-{val_f1:.2f}",
+        filename=f"{model_config.model_type}-{{epoch:02d}}-{{val_f1:.2f}}",
         monitor="val_f1",
         mode="max",
         save_top_k=1,

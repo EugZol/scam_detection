@@ -2,15 +2,16 @@
 
 This project implements a machine learning pipeline for detecting scam messages (scam detection) using text classification. The pipeline includes data preprocessing, model training, and inference capabilities.
 
-## Semantic Content
+## Message classification
 
 The goal of this project is to develop an automated system that can classify messages as either "Safe Message" or "Scam Message" based on their textual content. This is achieved through natural language processing techniques and machine learning models.
 
 Key features:
+
 - Text preprocessing and feature extraction
-- Support for both traditional ML (TF-IDF + Logistic Regression) and deep learning (Transformer-based) approaches
-- Production-ready model export to ONNX and TensorRT formats
-- Model serving via MLflow or Triton Inference Server
+- Traditional ML (TF-IDF + Logistic Regression) for baseline and deep learning (Transformer-based) model
+- Model export to ONNX format
+- Model serving via MLflow
 - Experiment tracking with MLflow
 - Data version control with DVC
 
@@ -25,7 +26,7 @@ Key features:
 
 2. **Clone the repository:**
    ```bash
-   git clone <repository-url>
+   git clone git@github.com:EugZol/scam_detection.git
    cd scam_detection
    ```
 
@@ -51,66 +52,84 @@ Key features:
 
 ### Train
 
-To train the model:
+Train the model using the main command interface:
 
-1. **For Transformer model (default):**
-   ```bash
-   uv run python -m scam_detection.commands
-   ```
+```bash
+# Default: Small transformer model
+uv run python -m scam_detection.commands train
 
-2. **For TF-IDF baseline:**
-   ```bash
-   uv run python -m scam_detection.commands model=baseline
-   ```
+# TF-IDF baseline model
+uv run python -m scam_detection.commands train model=baseline
 
-3. **Selecting models:**
-   Use Hydra's override syntax to switch between model configurations:
-   - `model=small_transformer` - Small transformer model (default)
-   - `model=baseline` - TF-IDF baseline model
+# Override training parameters
+uv run python -m scam_detection.commands train train.max_epochs=10 data.batch_size=32
+```
 
-   You can also override other parameters:
-   ```bash
-   uv run python -m scam_detection.commands model=baseline train.max_epochs=10 data.batch_size=32
-   ```
+**Available models:**
+- `model=small_transformer` - Transformer-based model (default)
+- `model=baseline` - TF-IDF + Logistic Regression
 
-The training process includes:
-- Data loading and preprocessing (automatically pulls from DVC if needed)
-- Model training with PyTorch Lightning (or scikit-learn for baseline)
-- Validation and early stopping
-- Logging metrics to MLflow
-- Saving checkpoints
+**Note:** Training automatically pulls data from DVC.
+
+The training process includes data preprocessing, model training with PyTorch Lightning, validation with early stopping, metrics logging to MLflow, and checkpoint saving to `models/checkpoints/`.
 
 ### Production Preparation
 
-1. **Export to ONNX:**
-   ```bash
-   uv run python scripts/export_onnx.py models/checkpoints/best.ckpt models/onnx/model.onnx distilbert-base-uncased
-   ```
+**Export model to ONNX format:**
+
+```bash
+# Interactive: Auto-detect and select checkpoint
+uv run python -m scam_detection.commands export
+
+# Specify model and output paths
+uv run python -m scam_detection.commands export -m models/checkpoints/best.ckpt -o models/onnx/model.onnx
+
+# Using Hydra overrides
+uv run python -m scam_detection.commands export export.model_path=models/checkpoints/best.ckpt
+```
 
 The exported ONNX model is optimized for inference and can be deployed in production environments.
 
 ### Infer
 
-To run inference:
+Run inference on new messages:
 
-1. **Using the trained model:**
-   ```bash
-   uv run python scripts/smoke_test_infer.py
-   ```
+```bash
+# Inference with text input
+uv run python -m scam_detection.commands infer \
+  infer.model_path=models/checkpoints/best.ckpt \
+  infer.texts='["Congratulations! You won a prize!", "Meeting at 3pm"]'
 
-2. **Serving with MLflow:**
-   - The model is logged to MLflow during training
-   - Use MLflow's serving capabilities to deploy the model
+# Inference from file (one message per line)
+uv run python -m scam_detection.commands infer \
+  infer.model_path=models/checkpoints/best.ckpt \
+  infer.input_file=messages.txt
+```
 
-Input format: JSON with "text" field containing the message content.
-Output: Prediction score (0 for safe, 1 for scam).
+**Input format:**
+- `infer.texts`: List of strings in Python syntax
+- `infer.input_file`: Text file with one message per line
 
-## Dependencies
+**Output:** Predictions printed with labels (SCAM/SAFE) for each message.
 
-- PyTorch (CPU version)
-- PyTorch Lightning
-- Transformers
-- MLflow
-- DVC
-- Hydra
-- And others (see pyproject.toml)
+### Serve
+
+Deploy the model using MLflow serving:
+
+```bash
+# Serve a model logged to MLflow
+mlflow models serve -m runs:/<RUN_ID>/model -p 8000
+
+# Or use a specific model version
+mlflow models serve -m models:/<MODEL_NAME>/<VERSION> -p 8000
+```
+
+**Usage:**
+```bash
+# Test the served model
+curl -X POST http://127.0.0.1:8000/invocations \
+  -H "Content-Type: application/json" \
+  -d '{"inputs": ["Your message text here"]}'
+```
+
+The model URI can be found in the MLflow UI after training at `http://127.0.0.1:8080`.

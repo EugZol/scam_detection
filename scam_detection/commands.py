@@ -57,15 +57,13 @@ def train(cfg: DictConfig):
     }
 
     # Add transformer-specific parameters if using transformer model
-    if cfg.model.model_type in {"transformer", "small_transformer"}:
+    if cfg.model.model_type == "small_transformer":
         datamodule_kwargs["tokenizer_name"] = cfg.model.tokenizer_name
         datamodule_kwargs["max_length"] = cfg.model.max_length
 
     datamodule = MessageDataModule(**datamodule_kwargs)
 
-    if cfg.model.model_type in {"transformer", "small_transformer"}:
-        # NOTE: we keep the name `train_transformer_model` for compatibility,
-        # but it now trains the scratch-based small transformer.
+    if cfg.model.model_type == "small_transformer":
         train_transformer_model(
             datamodule=datamodule,
             model_config=cfg.model,
@@ -122,7 +120,7 @@ def infer(cfg: DictConfig):
 
     # Load tokenizer if needed
     tokenizer = None
-    if model_type in {"transformer", "small_transformer"}:
+    if model_type == "small_transformer":
         tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
 
     predictor = Predictor(model, tokenizer)
@@ -202,9 +200,9 @@ def export(cfg: DictConfig):
         tokenizer_name=tokenizer_name,
     )
 
-    if model_type not in {"transformer", "small_transformer"}:
+    if model_type != "small_transformer":
         print(
-            "Error: ONNX export only supported for transformer models, "
+            "Error: ONNX export only supported for small_transformer model, "
             f"not {model_type}"
         )
         return
@@ -261,6 +259,70 @@ def serve(cfg: DictConfig):
     print(f"  Model Path: {cfg.serve.get('model_path', 'N/A')}")
 
 
+def _parse_export_flags(args):
+    """Parse -m/-o flags for export command before Hydra processing."""
+    model_path = None
+    output_path = None
+    remaining_args = []
+
+    i = 0
+    while i < len(args):
+        arg = args[i]
+        if arg in ["-m", "--model"]:
+            if i + 1 < len(args):
+                model_path = args[i + 1]
+                i += 2
+            else:
+                print("Error: -m/--model requires a path argument")
+                return None, None, None
+        elif arg in ["-o", "--output"]:
+            if i + 1 < len(args):
+                output_path = args[i + 1]
+                i += 2
+            else:
+                print("Error: -o/--output requires a path argument")
+                return None, None, None
+        else:
+            remaining_args.append(arg)
+            i += 1
+
+    return model_path, output_path, remaining_args
+
+
+def _find_checkpoints():
+    """Find all checkpoint files in models/checkpoints/."""
+    checkpoint_dir = Path("models/checkpoints")
+    if not checkpoint_dir.exists():
+        return []
+    return sorted(checkpoint_dir.glob("*.ckpt"))
+
+
+def _select_checkpoint(checkpoints):
+    """Interactive selection of checkpoint from list."""
+    if not checkpoints:
+        return None
+
+    if len(checkpoints) == 1:
+        print(f"Found checkpoint: {checkpoints[0]}")
+        return checkpoints[0]
+
+    print(f"Found {len(checkpoints)} checkpoints:")
+    for idx, ckpt in enumerate(checkpoints, 1):
+        print(f"  {idx}. {ckpt.name}")
+
+    while True:
+        try:
+            choice = input(f"Select checkpoint (1-{len(checkpoints)}): ").strip()
+            idx = int(choice) - 1
+            if 0 <= idx < len(checkpoints):
+                return checkpoints[idx]
+            else:
+                print(f"Please enter a number between 1 and {len(checkpoints)}")
+        except (ValueError, KeyboardInterrupt):
+            print("\nSelection cancelled.")
+            return None
+
+
 def main():
     """
     Main CLI entry point.
@@ -275,8 +337,13 @@ def main():
         print("  infer   - Run inference on texts")
         print("  export  - Export model to ONNX format")
         print("  serve   - Start MLflow serving")
-        print("\nExample:")
+        print("\nExamples:")
         print("  python -m scam_detection.commands train model=baseline")
+        print(
+            "  python -m scam_detection.commands export "
+            "-m path/to/model.ckpt -o output.onnx"
+        )
+        print("  python -m scam_detection.commands export  # Auto-detect checkpoint")
         return
 
     command = sys.argv[1]
@@ -295,6 +362,54 @@ def main():
         overrides = sys.argv[1:]
     else:
         overrides = sys.argv[2:]
+
+    # Special handling for export command with -m/-o flags
+    if command == "export" and any(
+        arg in overrides for arg in ["-m", "--model", "-o", "--output"]
+    ):
+        model_path, output_path, remaining_overrides = _parse_export_flags(overrides)
+
+        if model_path is None and output_path is None:
+            # Error in parsing
+            return
+
+        # Convert flags to Hydra overrides (quote values to handle special chars)
+        if model_path:
+            remaining_overrides.append(f"export.model_path='{model_path}'")
+        if output_path:
+            remaining_overrides.append(f"export.onnx_path='{output_path}'")
+
+        overrides = remaining_overrides
+
+    # Auto-detection for export command without explicit model path
+    if command == "export":
+        # Check if model_path is not in overrides
+        has_model_path = any(
+            "export.model_path=" in arg or "model_path=" in arg for arg in overrides
+        )
+
+        if not has_model_path:
+            checkpoints = _find_checkpoints()
+            if not checkpoints:
+                print("Error: No checkpoints found in models/checkpoints/")
+                print("Please train a model first or specify -m/--model path")
+                return
+
+            selected = _select_checkpoint(checkpoints)
+            if selected is None:
+                return
+
+            overrides.append(f"export.model_path='{selected}'")
+
+            # Set default output path if not specified
+            has_output_path = any(
+                "export.onnx_path=" in arg or "onnx_path=" in arg for arg in overrides
+            )
+            if not has_output_path:
+                output_dir = Path("models/onnx")
+                output_dir.mkdir(parents=True, exist_ok=True)
+                output_file = output_dir / f"{selected.stem}.onnx"
+                overrides.append(f"export.onnx_path='{output_file}'")
 
     # Initialize Hydra
     GlobalHydra.instance().clear()

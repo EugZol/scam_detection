@@ -1,8 +1,7 @@
 """Transformer models.
 
-This module contains:
-1) A HuggingFace-based classifier (kept for backwards compatibility).
-2) A lightweight encoder-only Transformer trained from scratch (CPU-friendly).
+This module contains a lightweight encoder-only Transformer
+trained from scratch (CPU-friendly).
 """
 
 from __future__ import annotations
@@ -25,29 +24,6 @@ class SmallTransformerConfig:
     n_layers: int = 6
     ffn_dim: int = 1536
     dropout: float = 0.1
-
-
-class TransformerClassifier(nn.Module):
-    """HuggingFace transformer classifier (pretrained).
-
-    NOTE: This remains for compatibility, but the project default can be switched
-    to the scratch-trained model.
-    """
-
-    def __init__(
-        self, model_name: str = "distilbert-base-uncased", num_labels: int = 2
-    ):
-        super().__init__()
-        from transformers import AutoModelForSequenceClassification
-
-        self.model = AutoModelForSequenceClassification.from_pretrained(
-            model_name, num_labels=num_labels
-        )
-
-    def forward(self, input_ids, attention_mask=None, labels=None):
-        return self.model(
-            input_ids=input_ids, attention_mask=attention_mask, labels=labels
-        )
 
 
 class SmallTransformerForSequenceClassification(nn.Module):

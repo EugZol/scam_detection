@@ -16,7 +16,7 @@ class Predictor:
 
     def predict(self, texts: List[str]) -> List[int]:
         """Predict labels for texts."""
-        if self.model.model_type == "transformer":
+        if self.model.model_type == "small_transformer":
             inputs = self.tokenizer(
                 texts,
                 truncation=True,
