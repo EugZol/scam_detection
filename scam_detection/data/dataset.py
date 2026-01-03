@@ -6,8 +6,6 @@ from transformers import AutoTokenizer
 
 
 class MessageDataset(Dataset):
-    """Dataset for message classification."""
-
     def __init__(
         self,
         texts: List[str],
@@ -45,8 +43,6 @@ class MessageDataset(Dataset):
 
 
 class TfidfMessageDataset(Dataset):
-    """Dataset for TF-IDF features."""
-
     def __init__(self, features: torch.Tensor, labels: List[int]):
         self.features = features
         self.labels = labels

@@ -1,10 +1,3 @@
-"""
-Integration tests for CLI commands.
-
-Tests the full command pipeline through direct function calls with Hydra configs,
-ensuring README examples work correctly.
-"""
-
 import time
 from pathlib import Path
 
@@ -17,7 +10,6 @@ from scam_detection.commands import train
 
 @pytest.fixture
 def test_dirs(tmp_path):
-    """Create isolated test directories for artifacts."""
     test_checkpoints = tmp_path / "checkpoints"
     test_onnx = tmp_path / "onnx"
     test_mlruns = tmp_path / "mlruns"
@@ -36,7 +28,6 @@ def test_dirs(tmp_path):
 
 @pytest.fixture
 def hydra_context():
-    """Initialize Hydra context for tests."""
     GlobalHydra.instance().clear()
     config_dir = Path(__file__).parent.parent / "configs"
     initialize_config_dir(config_dir=str(config_dir.absolute()), version_base=None)
@@ -46,17 +37,10 @@ def hydra_context():
 
 @pytest.fixture
 def tiny_dataset_path():
-    """Return path to tiny test dataset."""
     return str(Path(__file__).parent / "fixtures" / "tiny_dataset.csv")
 
 
 def test_train_baseline(hydra_context, test_dirs, tiny_dataset_path):
-    """
-    Test training TF-IDF baseline model (README example).
-
-    Command equivalent:
-        uv run python -m scam_detection.commands train model=baseline
-    """
     cfg = compose(
         config_name="config",
         overrides=[
@@ -71,10 +55,8 @@ def test_train_baseline(hydra_context, test_dirs, tiny_dataset_path):
         ],
     )
 
-    # Should complete without errors
     train(cfg)
 
-    # Verify MLflow artifacts were created
     assert test_dirs["mlruns"].exists()
     assert len(list(test_dirs["mlruns"].rglob("*"))) > 0
 
@@ -125,7 +107,6 @@ def test_train_transformer_with_overrides(hydra_context, test_dirs, tiny_dataset
 
 @pytest.fixture
 def trained_model_checkpoint(hydra_context, test_dirs, tiny_dataset_path):
-    """Train a model and return checkpoint path for inference/export tests."""
     test_start_time = time.time()
 
     cfg = compose(
@@ -144,7 +125,6 @@ def trained_model_checkpoint(hydra_context, test_dirs, tiny_dataset_path):
 
     train(cfg)
 
-    # Find the created checkpoint
     checkpoint_dir = Path("models/checkpoints")
     checkpoints = sorted(
         checkpoint_dir.glob("small_transformer-*.ckpt"), key=lambda p: p.stat().st_mtime
@@ -153,17 +133,15 @@ def trained_model_checkpoint(hydra_context, test_dirs, tiny_dataset_path):
     if not checkpoints:
         raise RuntimeError("No checkpoint created during fixture setup")
 
-    # Get checkpoints created during this test
     test_checkpoints = [c for c in checkpoints if c.stat().st_mtime >= test_start_time]
 
     if not test_checkpoints:
         raise RuntimeError("No checkpoint created during this test run")
 
-    checkpoint_path = test_checkpoints[-1]  # Most recent from this test
+    checkpoint_path = test_checkpoints[-1]
 
     yield checkpoint_path
 
-    # Cleanup: remove all checkpoints created during this test
     for ckpt in test_checkpoints:
         if ckpt.exists():
             ckpt.unlink()

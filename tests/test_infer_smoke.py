@@ -1,7 +1,3 @@
-"""
-Smoke test for inference.
-"""
-
 from scam_detection.inference.predictor import Predictor
 from scam_detection.models.lit_module import MessageClassifier
 

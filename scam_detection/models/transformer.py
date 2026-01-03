@@ -1,9 +1,3 @@
-"""Transformer models.
-
-This module contains a lightweight encoder-only Transformer
-trained from scratch (CPU-friendly).
-"""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -14,8 +8,6 @@ import torch.nn as nn
 
 @dataclass(frozen=True)
 class SmallTransformerConfig:
-    """Config for the scratch-trained small transformer."""
-
     vocab_size: int
     num_labels: int = 2
     max_length: int = 512
@@ -27,15 +19,6 @@ class SmallTransformerConfig:
 
 
 class SmallTransformerForSequenceClassification(nn.Module):
-    """Encoder-only Transformer classifier trained from scratch.
-
-    Inputs:
-        input_ids: LongTensor [B, T]
-        attention_mask: LongTensor [B, T] (1 for tokens, 0 for padding)
-    Outputs:
-        logits: FloatTensor [B, num_labels]
-    """
-
     def __init__(self, cfg: SmallTransformerConfig):
         super().__init__()
         self.cfg = cfg
@@ -77,12 +60,10 @@ class SmallTransformerForSequenceClassification(nn.Module):
 
         src_key_padding_mask = None
         if attention_mask is not None:
-            # PyTorch expects True for padding positions
             src_key_padding_mask = attention_mask == 0
 
         x = self.encoder(x, src_key_padding_mask=src_key_padding_mask)
 
-        # Masked mean pooling
         if attention_mask is None:
             pooled = x.mean(dim=1)
         else:

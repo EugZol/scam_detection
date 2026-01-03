@@ -14,8 +14,6 @@ from .transformer import (
 
 
 class MessageClassifier(pl.LightningModule):
-    """Lightning module for message classification."""
-
     def __init__(
         self,
         model_type: str = "small_transformer",
@@ -39,7 +37,6 @@ class MessageClassifier(pl.LightningModule):
 
         self.model_type = model_type
         if model_type == "small_transformer":
-            # Scratch-trained transformer encoder
             from transformers import AutoTokenizer
 
             vocab_size = AutoTokenizer.from_pretrained(tokenizer_name).vocab_size
@@ -61,10 +58,6 @@ class MessageClassifier(pl.LightningModule):
 
         self.criterion = nn.CrossEntropyLoss()
 
-        # Initialize torchmetrics for proper validation/test metric calculation
-        # These automatically accumulate across batches and reset each epoch
-        # Use 'multiclass' task since we pass class indices (from argmax),
-        # not probabilities
         if model_type == "small_transformer":
             self.val_accuracy = Accuracy(task="multiclass", num_classes=num_labels)
             self.val_f1 = F1Score(
@@ -124,11 +117,9 @@ class MessageClassifier(pl.LightningModule):
             loss, logits = self.forward(batch)
             preds = torch.argmax(logits, dim=1)
 
-            # Update torchmetrics - they accumulate across all batches automatically
             self.val_accuracy.update(preds, batch["label"])
             self.val_f1.update(preds, batch["label"])
 
-            # Log loss (average across batches is fine for loss)
             self.log(
                 "val_loss",
                 loss,
@@ -138,7 +129,6 @@ class MessageClassifier(pl.LightningModule):
                 logger=True,
             )
 
-            # Log metrics - torchmetrics will compute the final value at epoch end
             self.log(
                 "val_acc",
                 self.val_accuracy,
@@ -161,11 +151,9 @@ class MessageClassifier(pl.LightningModule):
             loss, logits = self.forward(batch)
             preds = torch.argmax(logits, dim=1)
 
-            # Update torchmetrics - they accumulate across all batches automatically
             self.test_accuracy.update(preds, batch["label"])
             self.test_f1.update(preds, batch["label"])
 
-            # Log metrics - torchmetrics will compute the final value at epoch end
             self.log("test_acc", self.test_accuracy, on_step=False, on_epoch=True)
             self.log("test_f1", self.test_f1, on_step=False, on_epoch=True)
 

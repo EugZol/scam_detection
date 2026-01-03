@@ -14,13 +14,6 @@ from .training.trainer import train_tfidf_model, train_transformer_model
 
 
 def train(cfg: DictConfig):
-    """
-    Train the model.
-
-    Args:
-        cfg: Hydra config
-    """
-    # Pull data using DVC if not available locally
     import subprocess
     from pathlib import Path
 
@@ -28,7 +21,6 @@ def train(cfg: DictConfig):
     if not data_path.exists():
         print(f"Data file {data_path} not found locally. Pulling from DVC...")
         try:
-            # Use DVC CLI to pull the data
             result = subprocess.run(
                 ["uv", "run", "dvc", "pull"],
                 capture_output=True,
@@ -46,7 +38,6 @@ def train(cfg: DictConfig):
             print("Please ensure DVC is properly configured and data is available")
             return
 
-    # Prepare datamodule kwargs based on model type
     datamodule_kwargs = {
         "csv_path": cfg.data.csv_path,
         "model_type": cfg.model.model_type,
@@ -57,18 +48,15 @@ def train(cfg: DictConfig):
         "num_workers": cfg.data.num_workers,
     }
 
-    # Add transformer-specific parameters if using transformer model
     if cfg.model.model_type == "small_transformer":
         datamodule_kwargs["tokenizer_name"] = cfg.model.tokenizer_name
         datamodule_kwargs["max_length"] = cfg.model.max_length
 
     datamodule = MessageDataModule(**datamodule_kwargs)
 
-    # Get common parameters from config
     log_model = cfg.train.get("log_model", True)
 
     if cfg.model.model_type == "small_transformer":
-        # Get fast_dev_run from config if it exists, otherwise default to 0
         fast_dev_run = cfg.train.get("fast_dev_run", 0)
 
         train_transformer_model(
@@ -95,15 +83,8 @@ def train(cfg: DictConfig):
 
 
 def infer(cfg: DictConfig):
-    """
-    Run inference on input texts.
-
-    Args:
-        cfg: Hydra config
-    """
     import ast
 
-    # Check for required parameters
     if "model_path" not in cfg.infer:
         print("Error: model_path is required for inference")
         print(
@@ -117,14 +98,12 @@ def infer(cfg: DictConfig):
         print(f"Error: Model file {model_path} not found")
         return
 
-    # Get model type and tokenizer from config
     model_type = cfg.model.model_type
     tokenizer_name = cfg.model.get("tokenizer_name", "distilbert-base-uncased")
 
     mlflow_tracking_uri = cfg.logging.get("mlflow_tracking_uri", "./mlruns")
     setup_mlflow_tracking(mlflow_tracking_uri)
 
-    # Load model
     print(f"Loading model from {model_path}...")
     model = MessageClassifier.load_from_checkpoint(
         str(model_path),
@@ -132,16 +111,13 @@ def infer(cfg: DictConfig):
         tokenizer_name=tokenizer_name,
     )
 
-    # Load tokenizer if needed
     tokenizer = None
     if model_type == "small_transformer":
         tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
 
     predictor = Predictor(model, tokenizer)
 
-    # Get input texts
     if "texts" in cfg.infer:
-        # Parse texts from command line
         texts_str = cfg.infer.texts
         if isinstance(texts_str, str):
             try:
@@ -151,7 +127,6 @@ def infer(cfg: DictConfig):
         else:
             texts = list(texts_str)
     elif "input_file" in cfg.infer:
-        # Read texts from file
         input_file = Path(cfg.infer.input_file)
         if not input_file.exists():
             print(f"Error: Input file {input_file} not found")
@@ -167,11 +142,9 @@ def infer(cfg: DictConfig):
         )
         return
 
-    # Run inference
     print(f"Running inference on {len(texts)} texts...")
     predictions = predictor.predict(texts)
 
-    # Display results
     print("\nResults:")
     for text, pred in zip(texts, predictions):
         label = "SCAM" if pred == 1 else "SAFE"
@@ -179,13 +152,6 @@ def infer(cfg: DictConfig):
 
 
 def export(cfg: DictConfig):
-    """
-    Export model to ONNX format.
-
-    Args:
-        cfg: Hydra config
-    """
-    # Check for required parameters
     if "model_path" not in cfg.export:
         print("Error: model_path is required for export")
         print(
@@ -209,7 +175,6 @@ def export(cfg: DictConfig):
     mlflow_tracking_uri = cfg.logging.get("mlflow_tracking_uri", "./mlruns")
     setup_mlflow_tracking(mlflow_tracking_uri)
 
-    # Load model
     print(f"Loading model from {model_path}...")
     model = MessageClassifier.load_from_checkpoint(
         str(model_path),
@@ -224,10 +189,8 @@ def export(cfg: DictConfig):
         )
         return
 
-    # Load tokenizer
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
 
-    # Create dummy input
     input_sample = cfg.export.get("input_sample", "This is a test message.")
     print(f"Creating dummy input: '{input_sample}'")
     dummy_input = tokenizer(
@@ -240,7 +203,6 @@ def export(cfg: DictConfig):
 
     model.eval()
 
-    # Export to ONNX
     print(f"Exporting model to {onnx_path}...")
     torch.onnx.export(
         model.model,
@@ -260,12 +222,6 @@ def export(cfg: DictConfig):
 
 
 def serve(cfg: DictConfig):
-    """
-    Start MLflow serving.
-
-    Args:
-        cfg: Hydra config
-    """
     print("MLflow serving is not yet fully implemented.")
     print("To serve a model with MLflow:")
     print("1. Ensure your model is logged to MLflow")
@@ -277,7 +233,6 @@ def serve(cfg: DictConfig):
 
 
 def _parse_export_flags(args):
-    """Parse -m/-o flags for export command before Hydra processing."""
     model_path = None
     output_path = None
     remaining_args = []
@@ -307,7 +262,6 @@ def _parse_export_flags(args):
 
 
 def _find_checkpoints():
-    """Find all checkpoint files in models/checkpoints/."""
     checkpoint_dir = Path("models/checkpoints")
     if not checkpoint_dir.exists():
         return []
@@ -315,7 +269,6 @@ def _find_checkpoints():
 
 
 def _select_checkpoint(checkpoints):
-    """Interactive selection of checkpoint from list."""
     if not checkpoints:
         return None
 
@@ -341,12 +294,8 @@ def _select_checkpoint(checkpoints):
 
 
 def main():
-    """
-    Main CLI entry point.
-    """
     import sys
 
-    # Extract command from first argument
     if len(sys.argv) < 2:
         print("Usage: python -m scam_detection.commands <command> [options]")
         print("\nAvailable commands:")
@@ -365,7 +314,6 @@ def main():
 
     command = sys.argv[1]
 
-    # Check if command is a valid command or a Hydra override
     valid_commands = ["train", "infer", "export", "serve"]
     if command not in valid_commands and "=" not in command:
         print(f"Error: Unknown command '{command}'")
@@ -373,24 +321,20 @@ def main():
         print("Or use Hydra overrides like: model=baseline")
         return
 
-    # If no command or command is a Hydra override, default to train
     if command not in valid_commands:
         command = "train"
         overrides = sys.argv[1:]
     else:
         overrides = sys.argv[2:]
 
-    # Special handling for export command with -m/-o flags
     if command == "export" and any(
         arg in overrides for arg in ["-m", "--model", "-o", "--output"]
     ):
         model_path, output_path, remaining_overrides = _parse_export_flags(overrides)
 
         if model_path is None and output_path is None:
-            # Error in parsing
             return
 
-        # Convert flags to Hydra overrides (quote values to handle special chars)
         if model_path:
             remaining_overrides.append(f"export.model_path='{model_path}'")
         if output_path:
@@ -398,9 +342,7 @@ def main():
 
         overrides = remaining_overrides
 
-    # Auto-detection for export command without explicit model path
     if command == "export":
-        # Check if model_path is not in overrides
         has_model_path = any(
             "export.model_path=" in arg or "model_path=" in arg for arg in overrides
         )
@@ -418,7 +360,6 @@ def main():
 
             overrides.append(f"export.model_path='{selected}'")
 
-            # Set default output path if not specified
             has_output_path = any(
                 "export.onnx_path=" in arg or "onnx_path=" in arg for arg in overrides
             )
@@ -428,12 +369,10 @@ def main():
                 output_file = output_dir / f"{selected.stem}.onnx"
                 overrides.append(f"export.onnx_path='{output_file}'")
 
-    # Initialize Hydra
     GlobalHydra.instance().clear()
     config_dir = Path(__file__).parent.parent / "configs"
     initialize_config_dir(config_dir=str(config_dir.absolute()), version_base=None)
 
-    # Add default config groups for different commands
     if command == "infer":
         default_overrides = ["+infer=default"]
     elif command == "export":
@@ -446,7 +385,6 @@ def main():
     cfg = compose(config_name="config", overrides=default_overrides + overrides)
     print(OmegaConf.to_yaml(cfg))
 
-    # Route to appropriate command
     if command == "train":
         train(cfg)
     elif command == "infer":
@@ -458,5 +396,4 @@ def main():
 
 
 if __name__ == "__main__":
-    # Don't use Fire here - we want to handle args ourselves for Hydra
     main()

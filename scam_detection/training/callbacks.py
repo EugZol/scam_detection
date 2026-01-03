@@ -1,7 +1,3 @@
-"""
-Custom PyTorch Lightning callbacks for training.
-"""
-
 import time
 from pathlib import Path
 
@@ -10,8 +6,6 @@ from lightning.pytorch.callbacks import Callback
 
 
 class PlottingCallback(Callback):
-    """Callback to save training plots locally."""
-
     def __init__(self, save_dir: str = "plots/train"):
         self.save_dir = Path(save_dir)
         self.save_dir.mkdir(parents=True, exist_ok=True)
@@ -23,7 +17,6 @@ class PlottingCallback(Callback):
         self.val_f1s = []
 
     def on_train_epoch_end(self, trainer, pl_module):
-        # Collect metrics - use epoch-level metrics
         if "train_loss_epoch" in trainer.logged_metrics:
             self.train_losses.append(trainer.logged_metrics["train_loss_epoch"].item())
         if "train_acc_epoch" in trainer.logged_metrics:
@@ -31,11 +24,9 @@ class PlottingCallback(Callback):
         if "train_f1_epoch" in trainer.logged_metrics:
             self.train_f1s.append(trainer.logged_metrics["train_f1_epoch"].item())
 
-        # Save plots on each epoch
         self._save_plots(trainer.current_epoch + 1)
 
     def on_validation_epoch_end(self, trainer, pl_module):
-        # Collect validation metrics
         if "val_loss" in trainer.logged_metrics:
             self.val_losses.append(trainer.logged_metrics["val_loss"].item())
         if "val_acc" in trainer.logged_metrics:
@@ -44,10 +35,8 @@ class PlottingCallback(Callback):
             self.val_f1s.append(trainer.logged_metrics["val_f1"].item())
 
     def _save_plots(self, current_epoch: int):
-        """Save plots up to current epoch."""
         epochs = range(1, len(self.train_losses) + 1)
 
-        # Loss plot
         plt.figure(figsize=(10, 6))
         plt.plot(epochs, self.train_losses, "b-", label="Training Loss")
         if len(self.val_losses) >= current_epoch:
@@ -64,7 +53,6 @@ class PlottingCallback(Callback):
         plt.savefig(self.save_dir / f"loss_epoch_{current_epoch}.png")
         plt.close()
 
-        # Accuracy plot
         plt.figure(figsize=(10, 6))
         plt.plot(epochs, self.train_accs, "b-", label="Training Accuracy")
         if len(self.val_accs) >= current_epoch:
@@ -81,7 +69,6 @@ class PlottingCallback(Callback):
         plt.savefig(self.save_dir / f"accuracy_epoch_{current_epoch}.png")
         plt.close()
 
-        # F1 Score plot
         plt.figure(figsize=(10, 6))
         plt.plot(epochs, self.train_f1s, "b-", label="Training F1")
         if len(self.val_f1s) >= current_epoch:
@@ -99,13 +86,11 @@ class PlottingCallback(Callback):
         plt.close()
 
     def on_train_end(self, trainer, pl_module):
-        # Save final plots (overwrite without epoch suffix)
         if not self.train_losses:
-            return  # No data to plot
+            return
 
         epochs = range(1, len(self.train_losses) + 1)
 
-        # Loss plot
         plt.figure(figsize=(10, 6))
         plt.plot(epochs, self.train_losses, "b-", label="Training Loss")
         if self.val_losses and len(self.val_losses) == len(self.train_losses):
@@ -117,7 +102,6 @@ class PlottingCallback(Callback):
         plt.savefig(self.save_dir / "loss.png")
         plt.close()
 
-        # Accuracy plot
         if self.train_accs:
             plt.figure(figsize=(10, 6))
             acc_epochs = range(1, len(self.train_accs) + 1)
@@ -131,7 +115,6 @@ class PlottingCallback(Callback):
             plt.savefig(self.save_dir / "accuracy.png")
             plt.close()
 
-        # F1 Score plot
         if self.train_f1s:
             plt.figure(figsize=(10, 6))
             f1_epochs = range(1, len(self.train_f1s) + 1)
@@ -147,8 +130,6 @@ class PlottingCallback(Callback):
 
 
 class MLflowPlottingCallback(Callback):
-    """Callback to log plots and metrics to MLflow every N training steps."""
-
     def __init__(self, log_every_n_steps: int = 20, plot_dir: str = "plots/train"):
         self.log_every_n_steps = log_every_n_steps
         self.plot_dir = Path(plot_dir)
@@ -163,11 +144,8 @@ class MLflowPlottingCallback(Callback):
         self.last_logged_step = 0
 
     def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx):
-        """Collect metrics from training steps and log plots every N steps."""
         self.step_count += 1
 
-        # Collect metrics from callback_metrics (which contains step-level metrics)
-        # PyTorch Lightning stores step-level metrics in callback_metrics
         metrics = trainer.callback_metrics
 
         if "train_loss" in metrics:
@@ -191,7 +169,6 @@ class MLflowPlottingCallback(Callback):
             else:
                 self.train_f1s.append(float(f1_val))
 
-        # Log plots every N steps
         if (
             self.step_count % self.log_every_n_steps == 0
             and self.step_count != self.last_logged_step
@@ -200,7 +177,6 @@ class MLflowPlottingCallback(Callback):
             self._log_plots_to_mlflow(trainer)
 
     def on_validation_epoch_end(self, trainer, pl_module):
-        """Collect validation metrics after each validation epoch."""
         if "val_loss" in trainer.logged_metrics:
             val_loss = trainer.logged_metrics["val_loss"]
             if hasattr(val_loss, "item"):
@@ -223,11 +199,9 @@ class MLflowPlottingCallback(Callback):
                 self.val_f1s.append(float(val_f1))
 
     def _log_plots_to_mlflow(self, trainer):
-        """Generate and log comprehensive training progress plot to MLflow."""
         if not self.train_losses:
             return
 
-        # Create a comprehensive training progress plot
         fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(16, 12))
         fig.suptitle(
             f"Training Progress at Step {self.step_count}",
@@ -237,7 +211,6 @@ class MLflowPlottingCallback(Callback):
 
         steps = range(1, len(self.train_losses) + 1)
 
-        # Loss plot
         ax1.plot(
             steps,
             self.train_losses,
@@ -247,8 +220,6 @@ class MLflowPlottingCallback(Callback):
             alpha=0.7,
         )
         if self.val_losses:
-            # Estimate where validation points should be placed
-            # (typically at epoch boundaries)
             steps_per_val = len(self.train_losses) // max(1, len(self.val_losses))
             val_steps = [
                 min((i + 1) * steps_per_val, len(self.train_losses))
@@ -269,7 +240,6 @@ class MLflowPlottingCallback(Callback):
         ax1.legend()
         ax1.grid(True, alpha=0.3)
 
-        # Accuracy plot
         if self.train_accs:
             acc_steps = range(1, len(self.train_accs) + 1)
             ax2.plot(
@@ -312,7 +282,6 @@ class MLflowPlottingCallback(Callback):
             )
             ax2.set_title("Accuracy", fontweight="bold")
 
-        # F1 Score plot
         if self.train_f1s:
             f1_steps = range(1, len(self.train_f1s) + 1)
             ax3.plot(
@@ -355,7 +324,6 @@ class MLflowPlottingCallback(Callback):
             )
             ax3.set_title("F1 Score", fontweight="bold")
 
-        # Summary info
         ax4.axis("off")
         info_text = f"Training Step: {self.step_count}\n\n"
         info_text += "=" * 35 + "\n"
@@ -388,23 +356,18 @@ class MLflowPlottingCallback(Callback):
 
         plt.tight_layout()
 
-        # Save plot locally
         plot_path = self.plot_dir / f"training_progress_step_{self.step_count}.png"
         plt.savefig(plot_path, dpi=100, bbox_inches="tight")
         plt.close()
 
-        # Log to MLflow using trainer's logger
         try:
             if hasattr(trainer, "logger") and trainer.logger is not None:
-                # Log the artifact using trainer's logger experiment
                 trainer.logger.experiment.log_artifact(
                     trainer.logger.run_id,
                     str(plot_path),
                     artifact_path="training_plots",
                 )
 
-                # Also log current metrics to MLflow as step-based metrics
-                # using trainer's logger
                 if self.train_losses:
                     trainer.logger.experiment.log_metric(
                         trainer.logger.run_id,

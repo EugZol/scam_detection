@@ -26,10 +26,8 @@ def train_transformer_model(
     fast_dev_run: int = 0,
     log_model: bool = True,
 ):
-    """Train the transformer model."""
     import time
 
-    # Configure PyTorch for multi-core CPU training
     try:
         torch.set_num_threads(cpu_threads)
         torch.set_num_interop_threads(cpu_threads)
@@ -37,11 +35,9 @@ def train_transformer_model(
     except RuntimeError:
         print("PyTorch threads already configured, skipping")
 
-    # Set up MLflow tracking
     setup_mlflow_tracking(mlflow_tracking_uri)
     ensure_experiment_exists(mlflow_experiment)
 
-    # Set the MLflow experiment explicitly
     import mlflow
 
     mlflow.set_experiment(mlflow_experiment)
@@ -72,11 +68,9 @@ def train_transformer_model(
         log_every_n_steps=log_every_n_steps
     )
 
-    # Enhanced MLflow logger with descriptive run name
     run_name = f"small_transformer_{time.strftime('%Y%m%d_%H%M%S')}"
     logger = MLFlowLogger(experiment_name=mlflow_experiment, run_name=run_name)
 
-    # Build trainer kwargs
     trainer_kwargs = {
         "max_epochs": max_epochs,
         "callbacks": [
@@ -90,13 +84,11 @@ def train_transformer_model(
         "accelerator": "cpu",
     }
 
-    # Add fast_dev_run if specified (for quick testing)
     if fast_dev_run > 0:
         trainer_kwargs["fast_dev_run"] = fast_dev_run
 
     trainer = pl.Trainer(**trainer_kwargs)
 
-    # Log additional metadata before training
     datamodule.setup()
     train_samples = len(datamodule.train_dataset)
     val_samples = len(datamodule.val_dataset)
@@ -120,14 +112,11 @@ def train_transformer_model(
         }
     )
 
-    # Log git commit before training starts (when MLflow run is active)
-    # Skip if fast_dev_run is enabled (logging is suppressed in that mode)
     if fast_dev_run == 0:
         log_git_commit()
 
     trainer.fit(model, datamodule)
 
-    # Log final model checkpoint (best ckpt path) to MLflow artifacts
     if checkpoint_callback.best_model_path:
         trainer.logger.experiment.log_artifact(
             trainer.logger.run_id,
@@ -137,7 +126,6 @@ def train_transformer_model(
 
     trainer.test(model, datamodule)
 
-    # Log model to MLflow (can be slow, so optional)
     if log_model and fast_dev_run == 0:
         import mlflow.pytorch
 
@@ -157,27 +145,18 @@ def train_tfidf_model(
     mlflow_tracking_uri: str = "http://127.0.0.1:8080",
     log_model: bool = True,
 ):
-    """Train the TF-IDF baseline model.
-
-    Args:
-        log_model: Whether to log model to MLflow (can be slow, disable in tests).
-        model_type: Model type identifier used for registered model name.
-    """
     import time
 
     import mlflow
     import mlflow.sklearn
     from sklearn.metrics import accuracy_score, f1_score
 
-    # Set up MLflow tracking
     setup_mlflow_tracking(mlflow_tracking_uri)
 
-    # Set the MLflow experiment (creates if doesn't exist)
     mlflow.set_experiment(mlflow_experiment)
 
     datamodule.setup()
 
-    # Collect training data
     train_loader = datamodule.train_dataloader()
     X_train = []
     y_train = []
@@ -185,7 +164,6 @@ def train_tfidf_model(
         X_train.extend(batch["features"].numpy())
         y_train.extend(batch["label"].numpy())
 
-    # Collect validation data
     val_loader = datamodule.val_dataloader()
     X_val = []
     y_val = []
@@ -193,47 +171,38 @@ def train_tfidf_model(
         X_val.extend(batch["features"].numpy())
         y_val.extend(batch["label"].numpy())
 
-    # Train model
     start_time = time.time()
     model = MessageClassifier(model_type="tfidf").model
     model.fit(X_train, y_train)
     training_time = time.time() - start_time
 
-    # Evaluate
     preds = model.predict(X_val)
     acc = accuracy_score(y_val, preds)
     f1 = f1_score(y_val, preds, average="binary")
 
     print(f"TF-IDF Validation Acc: {acc:.4f}, F1: {f1:.4f}")
 
-    # Log to MLflow with detailed metadata
     with mlflow.start_run(run_name=f"tfidf_baseline_{time.strftime('%Y%m%d_%H%M%S')}"):
-        # Log git commit
         log_git_commit()
 
-        # Log model details
         mlflow.set_tag("model_type", "tfidf_baseline")
         mlflow.set_tag("task", "scam_message_detection")
         mlflow.set_tag("framework", "scikit-learn")
 
-        # Log hyperparameters
         mlflow.log_param(
             "vectorizer_max_features", getattr(model, "max_features", "default")
         )
         mlflow.log_param("vectorizer_stop_words", "english")
         mlflow.log_param("classifier_type", "LogisticRegression")
 
-        # Log data info
         mlflow.log_param("train_samples", len(X_train))
         mlflow.log_param("val_samples", len(X_val))
         mlflow.log_param("feature_dim", X_train[0].shape[0] if X_train else 0)
 
-        # Log metrics
         mlflow.log_metric("val_accuracy", acc)
         mlflow.log_metric("val_f1_score", f1)
         mlflow.log_metric("training_time_seconds", training_time)
 
-        # Log model to MLflow (can be slow, so optional)
         if log_model:
             mlflow.sklearn.log_model(
                 model,

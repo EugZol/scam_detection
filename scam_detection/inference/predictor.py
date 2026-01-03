@@ -7,15 +7,12 @@ from ..models.lit_module import MessageClassifier
 
 
 class Predictor:
-    """Predictor for message classification."""
-
     def __init__(self, model: MessageClassifier, tokenizer: AutoTokenizer = None):
         self.model = model
         self.tokenizer = tokenizer
         self.model.eval()
 
     def predict(self, texts: List[str]) -> List[int]:
-        """Predict labels for texts."""
         if self.model.model_type == "small_transformer":
             inputs = self.tokenizer(
                 texts,
@@ -27,7 +24,7 @@ class Predictor:
             batch = {
                 "input_ids": inputs["input_ids"],
                 "attention_mask": inputs["attention_mask"],
-                "label": torch.zeros(len(texts), dtype=torch.long),  # dummy labels
+                "label": torch.zeros(len(texts), dtype=torch.long),
             }
             with torch.no_grad():
                 _, logits = self.model(batch)

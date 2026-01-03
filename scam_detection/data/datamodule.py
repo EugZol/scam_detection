@@ -9,8 +9,6 @@ from .preprocessing import load_and_preprocess_data, prepare_tfidf_features
 
 
 class MessageDataModule(pl.LightningDataModule):
-    """DataModule for message classification."""
-
     def __init__(
         self,
         csv_path: str,

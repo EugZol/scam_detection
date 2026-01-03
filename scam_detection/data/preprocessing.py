@@ -7,7 +7,6 @@ from transformers import AutoTokenizer
 
 
 def clean_text(text: str) -> str:
-    """Clean message text by removing extra spaces, newlines, and special chars."""
     if not isinstance(text, str):
         return ""
     text = re.sub(r"\s+", " ", text)
@@ -16,15 +15,6 @@ def clean_text(text: str) -> str:
 
 
 def load_and_preprocess_data(csv_path: str) -> pd.DataFrame:
-    """
-    Load the CSV data and preprocess it.
-
-    Args:
-        csv_path: Path to the CSV file
-
-    Returns:
-        Preprocessed DataFrame with 'text' and 'label' columns
-    """
     df = pd.read_csv(csv_path)
     df = df[["Message Text", "Message Type"]]
     df.columns = ["text", "label"]
@@ -36,17 +26,6 @@ def load_and_preprocess_data(csv_path: str) -> pd.DataFrame:
 def prepare_tfidf_features(
     texts: List[str], vectorizer: TfidfVectorizer = None, fit: bool = True
 ) -> TfidfVectorizer:
-    """
-    Prepare TF-IDF features from texts.
-
-    Args:
-        texts: List of texts
-        vectorizer: Pre-fitted vectorizer, if None and fit=True, create new
-        fit: Whether to fit the vectorizer
-
-    Returns:
-        Fitted vectorizer
-    """
     if vectorizer is None:
         vectorizer = TfidfVectorizer(max_features=5000, stop_words="english")
     if fit:
@@ -57,17 +36,6 @@ def prepare_tfidf_features(
 def prepare_transformer_features(
     texts: List[str], tokenizer: AutoTokenizer, max_length: int = 512
 ) -> dict:
-    """
-    Prepare features for transformer model.
-
-    Args:
-        texts: List of texts
-        tokenizer: HuggingFace tokenizer
-        max_length: Maximum sequence length
-
-    Returns:
-        Tokenized inputs
-    """
     return tokenizer(
         texts, truncation=True, padding=True, max_length=max_length, return_tensors="pt"
     )

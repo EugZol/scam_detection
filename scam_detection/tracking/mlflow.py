@@ -1,20 +1,14 @@
-"""
-MLflow utilities for experiment tracking.
-"""
-
 from pathlib import Path
 
 import mlflow
 
 
 def setup_mlflow_tracking(mlflow_tracking_uri: str = "http://localhost:5000"):
-    """Set up MLflow tracking URI with connection verification."""
     import requests
     from requests.exceptions import RequestException
 
     mlflow.set_tracking_uri(mlflow_tracking_uri)
 
-    # Verify connection if using remote tracking server
     if mlflow_tracking_uri.startswith("http://") or mlflow_tracking_uri.startswith(
         "https://"
     ):
@@ -44,17 +38,13 @@ def setup_mlflow_tracking(mlflow_tracking_uri: str = "http://localhost:5000"):
             port = mlflow_tracking_uri.split(":")[-1]
             print(f"   mlflow server --host 127.0.0.1 --port {port}")
             print("   Falling back to local filesystem tracking (./mlruns)")
-            # Fall back to local tracking
             mlflow.set_tracking_uri("./mlruns")
 
 
 def ensure_experiment_exists(experiment_name: str):
-    """Ensure MLflow experiment exists, create if it doesn't."""
     try:
-        # Try to get the experiment
         experiment = mlflow.get_experiment_by_name(experiment_name)
         if experiment is None:
-            # Create the experiment if it doesn't exist
             experiment_id = mlflow.create_experiment(experiment_name)
             print(
                 f"Created MLflow experiment '{experiment_name}' "
@@ -67,7 +57,6 @@ def ensure_experiment_exists(experiment_name: str):
             )
     except Exception as e:
         print(f"Warning: Could not ensure experiment exists: {e}")
-        # Try to create the experiment anyway
         try:
             experiment_id = mlflow.create_experiment(experiment_name)
             print(
@@ -79,7 +68,6 @@ def ensure_experiment_exists(experiment_name: str):
 
 
 def log_git_commit():
-    """Log the current git commit hash to MLflow."""
     try:
         import subprocess
 
