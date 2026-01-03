@@ -1,11 +1,11 @@
 from pydantic import BaseModel
 
 
-class EmailData(BaseModel):
+class MessageData(BaseModel):
     text: str
     label: str
 
 
-class EmailBatch(BaseModel):
+class MessageBatch(BaseModel):
     texts: list[str]
     labels: list[str]

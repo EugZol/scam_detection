@@ -2,15 +2,15 @@ import mlflow
 import pandas as pd
 from transformers import AutoTokenizer
 
-from ..models.lit_module import EmailClassifier
+from ..models.lit_module import MessageClassifier
 
 
-class EmailClassifierWrapper(mlflow.pyfunc.PythonModel):
+class MessageClassifierWrapper(mlflow.pyfunc.PythonModel):
     """
-    MLflow wrapper for email classifier.
+    MLflow wrapper for message classifier.
     """
 
-    def __init__(self, model: EmailClassifier, tokenizer: AutoTokenizer = None):
+    def __init__(self, model: MessageClassifier, tokenizer: AutoTokenizer = None):
         self.model = model
         self.tokenizer = tokenizer
 

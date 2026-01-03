@@ -1,3 +1,4 @@
 # Export config
+model_path: null
 onnx_path: models/onnx/model.onnx
-input_sample: "This is a test email."
+input_sample: "This is a test message."

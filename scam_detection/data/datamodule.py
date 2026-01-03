@@ -4,12 +4,12 @@ from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader
 from transformers import AutoTokenizer
 
-from .dataset import EmailDataset, TfidfEmailDataset
+from .dataset import MessageDataset, TfidfMessageDataset
 from .preprocessing import load_and_preprocess_data, prepare_tfidf_features
 
 
-class EmailDataModule(pl.LightningDataModule):
-    """DataModule for email classification."""
+class MessageDataModule(pl.LightningDataModule):
+    """DataModule for message classification."""
 
     def __init__(
         self,
@@ -58,19 +58,19 @@ class EmailDataModule(pl.LightningDataModule):
 
         if self.model_type in {"transformer", "small_transformer"}:
             self.tokenizer = AutoTokenizer.from_pretrained(self.tokenizer_name)
-            self.train_dataset = EmailDataset(
+            self.train_dataset = MessageDataset(
                 train_df["text"].tolist(),
                 train_df["label"].tolist(),
                 self.tokenizer,
                 self.max_length,
             )
-            self.val_dataset = EmailDataset(
+            self.val_dataset = MessageDataset(
                 val_df["text"].tolist(),
                 val_df["label"].tolist(),
                 self.tokenizer,
                 self.max_length,
             )
-            self.test_dataset = EmailDataset(
+            self.test_dataset = MessageDataset(
                 test_df["text"].tolist(),
                 test_df["label"].tolist(),
                 self.tokenizer,
@@ -91,11 +91,13 @@ class EmailDataModule(pl.LightningDataModule):
                 dtype=torch.float32,
             )
 
-            self.train_dataset = TfidfEmailDataset(
+            self.train_dataset = TfidfMessageDataset(
                 train_features, train_df["label"].tolist()
             )
-            self.val_dataset = TfidfEmailDataset(val_features, val_df["label"].tolist())
-            self.test_dataset = TfidfEmailDataset(
+            self.val_dataset = TfidfMessageDataset(
+                val_features, val_df["label"].tolist()
+            )
+            self.test_dataset = TfidfMessageDataset(
                 test_features, test_df["label"].tolist()
             )
 

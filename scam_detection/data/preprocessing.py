@@ -7,7 +7,7 @@ from transformers import AutoTokenizer
 
 
 def clean_text(text: str) -> str:
-    """Clean email text by removing extra spaces, newlines, and special chars."""
+    """Clean message text by removing extra spaces, newlines, and special chars."""
     if not isinstance(text, str):
         return ""
     text = re.sub(r"\s+", " ", text)
@@ -26,10 +26,10 @@ def load_and_preprocess_data(csv_path: str) -> pd.DataFrame:
         Preprocessed DataFrame with 'text' and 'label' columns
     """
     df = pd.read_csv(csv_path)
-    df = df[["Email Text", "Email Type"]]
+    df = df[["Message Text", "Message Type"]]
     df.columns = ["text", "label"]
     df["text"] = df["text"].apply(clean_text)
-    df["label"] = df["label"].map({"Safe Email": 0, "Phishing Email": 1})
+    df["label"] = df["label"].map({"Safe Message": 0, "Scam Message": 1})
     return df.dropna()
 
 

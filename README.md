@@ -1,10 +1,10 @@
 # Scam Detection
 
-This project implements a machine learning pipeline for detecting scam emails (phishing detection) using text classification. The pipeline includes data preprocessing, model training, and inference capabilities.
+This project implements a machine learning pipeline for detecting scam messages (scam detection) using text classification. The pipeline includes data preprocessing, model training, and inference capabilities.
 
 ## Semantic Content
 
-The goal of this project is to develop an automated system that can classify emails as either "Safe Email" or "Phishing Email" based on their textual content. This is achieved through natural language processing techniques and machine learning models.
+The goal of this project is to develop an automated system that can classify messages as either "Safe Message" or "Scam Message" based on their textual content. This is achieved through natural language processing techniques and machine learning models.
 
 Key features:
 - Text preprocessing and feature extraction
@@ -67,7 +67,7 @@ To train the model:
    Use Hydra's override syntax to switch between model configurations:
    - `model=small_transformer` - Small transformer model (default)
    - `model=baseline` - TF-IDF baseline model
-   
+
    You can also override other parameters:
    ```bash
    uv run python -m scam_detection.commands model=baseline train.max_epochs=10 data.batch_size=32
@@ -102,8 +102,8 @@ To run inference:
    - The model is logged to MLflow during training
    - Use MLflow's serving capabilities to deploy the model
 
-Input format: JSON with "text" field containing the email content.
-Output: Prediction score (0 for safe, 1 for phishing).
+Input format: JSON with "text" field containing the message content.
+Output: Prediction score (0 for safe, 1 for scam).
 
 ## Dependencies
 

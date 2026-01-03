@@ -1,2 +1,4 @@
 # Inference config
 model_path: models/onnx/model.onnx
+texts: null
+input_file: null

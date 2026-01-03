@@ -3,19 +3,24 @@ import torch
 from lightning.pytorch.callbacks import EarlyStopping, ModelCheckpoint
 from lightning.pytorch.loggers import MLFlowLogger
 
-from ..data.datamodule import EmailDataModule
-from ..models.lit_module import EmailClassifier
-from ..tracking.mlflow import cleanup_malformed_experiments, ensure_experiment_exists, log_git_commit, setup_mlflow_tracking
-from .callbacks import PlottingCallback, MLflowPlottingCallback
+from ..data.datamodule import MessageDataModule
+from ..models.lit_module import MessageClassifier
+from ..tracking.mlflow import (
+    cleanup_malformed_experiments,
+    ensure_experiment_exists,
+    log_git_commit,
+    setup_mlflow_tracking,
+)
+from .callbacks import MLflowPlottingCallback, PlottingCallback
 
 
 def train_transformer_model(
-    datamodule: EmailDataModule,
+    datamodule: MessageDataModule,
     model_config,
     learning_rate: float = 2e-5,
     max_epochs: int = 10,
     patience: int = 3,
-    mlflow_experiment: str = "email_classification",
+    mlflow_experiment: str = "message_classification",
     mlflow_tracking_uri: str = "http://127.0.0.1:8080",
     log_every_n_steps: int = 20,
     cpu_threads: int = 20,
@@ -36,9 +41,10 @@ def train_transformer_model(
 
     # Set the MLflow experiment explicitly
     import mlflow
+
     mlflow.set_experiment(mlflow_experiment)
 
-    model = EmailClassifier(
+    model = MessageClassifier(
         model_type=model_config.model_type,
         tokenizer_name=model_config.tokenizer_name,
         max_length=model_config.max_length,
@@ -60,7 +66,9 @@ def train_transformer_model(
     )
     early_stopping = EarlyStopping(monitor="val_f1", patience=patience, mode="max")
     plotting_callback = PlottingCallback()
-    mlflow_plotting_callback = MLflowPlottingCallback(log_every_n_steps=log_every_n_steps)
+    mlflow_plotting_callback = MLflowPlottingCallback(
+        log_every_n_steps=log_every_n_steps
+    )
 
     # Enhanced MLflow logger with descriptive run name
     run_name = f"small_transformer_{time.strftime('%Y%m%d_%H%M%S')}"
@@ -68,7 +76,12 @@ def train_transformer_model(
 
     trainer = pl.Trainer(
         max_epochs=max_epochs,
-        callbacks=[checkpoint_callback, early_stopping, plotting_callback, mlflow_plotting_callback],
+        callbacks=[
+            checkpoint_callback,
+            early_stopping,
+            plotting_callback,
+            mlflow_plotting_callback,
+        ],
         logger=logger,
         # Make sure metrics show up as a time-series in MLflow quickly.
         # (otherwise you may only see epoch-level aggregation)
@@ -84,7 +97,7 @@ def train_transformer_model(
         {
             "model_type": model_config.model_type,
             "tokenizer_name": model_config.tokenizer_name,
-            "task": "email_phishing_detection",
+            "task": "scam_message_detection",
             "framework": "pytorch_lightning",
             "train_samples": train_samples,
             "val_samples": val_samples,
@@ -119,8 +132,8 @@ def train_transformer_model(
 
 
 def train_tfidf_model(
-    datamodule: EmailDataModule,
-    mlflow_experiment: str = "email_classification",
+    datamodule: MessageDataModule,
+    mlflow_experiment: str = "message_classification",
     mlflow_tracking_uri: str = "http://127.0.0.1:8080",
 ):
     """Train the TF-IDF baseline model."""
@@ -156,7 +169,7 @@ def train_tfidf_model(
 
     # Train model
     start_time = time.time()
-    model = EmailClassifier(model_type="tfidf").model
+    model = MessageClassifier(model_type="tfidf").model
     model.fit(X_train, y_train)
     training_time = time.time() - start_time
 
@@ -174,7 +187,7 @@ def train_tfidf_model(
 
         # Log model details
         mlflow.set_tag("model_type", "tfidf_baseline")
-        mlflow.set_tag("task", "email_phishing_detection")
+        mlflow.set_tag("task", "scam_message_detection")
         mlflow.set_tag("framework", "scikit-learn")
 
         # Log hyperparameters
@@ -198,7 +211,7 @@ def train_tfidf_model(
         mlflow.sklearn.log_model(
             model,
             "tfidf_logistic_regression_model",
-            registered_model_name="EmailPhishingDetector_TFIDF",
+            registered_model_name="ScamMessageDetector_TFIDF",
         )
 
     return model

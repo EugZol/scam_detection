@@ -14,8 +14,8 @@ from .transformer import (
 )
 
 
-class EmailClassifier(pl.LightningModule):
-    """Lightning module for email classification."""
+class MessageClassifier(pl.LightningModule):
+    """Lightning module for message classification."""
 
     def __init__(
         self,
@@ -67,12 +67,21 @@ class EmailClassifier(pl.LightningModule):
 
         # Initialize torchmetrics for proper validation/test metric calculation
         # These automatically accumulate across batches and reset each epoch
-        # Use 'multiclass' task since we pass class indices (from argmax), not probabilities
+        # Use 'multiclass' task since we pass class indices (from argmax),
+        # not probabilities
         if model_type in {"transformer", "small_transformer"}:
             self.val_accuracy = Accuracy(task="multiclass", num_classes=num_labels)
-            self.val_f1 = F1Score(task="multiclass", num_classes=num_labels, average="macro")
+            self.val_f1 = F1Score(
+                task="multiclass",
+                num_classes=num_labels,
+                average="macro",
+            )
             self.test_accuracy = Accuracy(task="multiclass", num_classes=num_labels)
-            self.test_f1 = F1Score(task="multiclass", num_classes=num_labels, average="macro")
+            self.test_f1 = F1Score(
+                task="multiclass",
+                num_classes=num_labels,
+                average="macro",
+            )
 
     def forward(self, batch):
         if self.model_type == "transformer":

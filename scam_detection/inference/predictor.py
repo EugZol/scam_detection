@@ -3,13 +3,13 @@ from typing import List
 import torch
 from transformers import AutoTokenizer
 
-from ..models.lit_module import EmailClassifier
+from ..models.lit_module import MessageClassifier
 
 
 class Predictor:
-    """Predictor for email classification."""
+    """Predictor for message classification."""
 
-    def __init__(self, model: EmailClassifier, tokenizer: AutoTokenizer = None):
+    def __init__(self, model: MessageClassifier, tokenizer: AutoTokenizer = None):
         self.model = model
         self.tokenizer = tokenizer
         self.model.eval()
@@ -24,9 +24,14 @@ class Predictor:
                 max_length=512,
                 return_tensors="pt",
             )
+            batch = {
+                "input_ids": inputs["input_ids"],
+                "attention_mask": inputs["attention_mask"],
+                "label": torch.zeros(len(texts), dtype=torch.long),  # dummy labels
+            }
             with torch.no_grad():
-                outputs = self.model(**inputs)
-                preds = torch.argmax(outputs.logits, dim=1)
+                _, logits = self.model(batch)
+                preds = torch.argmax(logits, dim=1)
             return preds.tolist()
         elif self.model.model_type == "tfidf":
             return [0] * len(texts)

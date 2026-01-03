@@ -4,19 +4,22 @@ Smoke test for inference.
 """
 
 from scam_detection.inference.predictor import Predictor
-from scam_detection.models.lit_module import EmailClassifier
+from scam_detection.models.lit_module import MessageClassifier
 
 
 def smoke_test():
     """
     Run smoke test for inference.
     """
+    from transformers import AutoTokenizer
+
     # Load model (mock)
-    model = EmailClassifier(model_type="transformer")  # This will load default
+    model = MessageClassifier(model_type="transformer")  # This will load default
+    tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
 
-    predictor = Predictor(model)
+    predictor = Predictor(model, tokenizer)
 
-    test_texts = ["This is a safe email.", "This is a phishing email!"]
+    test_texts = ["This is a safe message.", "This is a scam message!"]
 
     preds = predictor.predict(test_texts)
 

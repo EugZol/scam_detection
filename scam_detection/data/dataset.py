@@ -5,8 +5,8 @@ from torch.utils.data import Dataset
 from transformers import AutoTokenizer
 
 
-class EmailDataset(Dataset):
-    """Dataset for email classification."""
+class MessageDataset(Dataset):
+    """Dataset for message classification."""
 
     def __init__(
         self,
@@ -44,7 +44,7 @@ class EmailDataset(Dataset):
             return {"text": text, "label": torch.tensor(label, dtype=torch.long)}
 
 
-class TfidfEmailDataset(Dataset):
+class TfidfMessageDataset(Dataset):
     """Dataset for TF-IDF features."""
 
     def __init__(self, features: torch.Tensor, labels: List[int]):

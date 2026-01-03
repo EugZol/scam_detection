@@ -7,7 +7,6 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 from lightning.pytorch.callbacks import Callback
-import mlflow
 
 
 class PlottingCallback(Callback):
@@ -52,7 +51,12 @@ class PlottingCallback(Callback):
         plt.figure(figsize=(10, 6))
         plt.plot(epochs, self.train_losses, "b-", label="Training Loss")
         if len(self.val_losses) >= current_epoch:
-            plt.plot(range(1, current_epoch + 1), self.val_losses[:current_epoch], "r-", label="Validation Loss")
+            plt.plot(
+                range(1, current_epoch + 1),
+                self.val_losses[:current_epoch],
+                "r-",
+                label="Validation Loss",
+            )
         plt.title(f"Training and Validation Loss (Epoch {current_epoch})")
         plt.xlabel("Epochs")
         plt.ylabel("Loss")
@@ -64,7 +68,12 @@ class PlottingCallback(Callback):
         plt.figure(figsize=(10, 6))
         plt.plot(epochs, self.train_accs, "b-", label="Training Accuracy")
         if len(self.val_accs) >= current_epoch:
-            plt.plot(range(1, current_epoch + 1), self.val_accs[:current_epoch], "r-", label="Validation Accuracy")
+            plt.plot(
+                range(1, current_epoch + 1),
+                self.val_accs[:current_epoch],
+                "r-",
+                label="Validation Accuracy",
+            )
         plt.title(f"Training and Validation Accuracy (Epoch {current_epoch})")
         plt.xlabel("Epochs")
         plt.ylabel("Accuracy")
@@ -76,7 +85,12 @@ class PlottingCallback(Callback):
         plt.figure(figsize=(10, 6))
         plt.plot(epochs, self.train_f1s, "b-", label="Training F1")
         if len(self.val_f1s) >= current_epoch:
-            plt.plot(range(1, current_epoch + 1), self.val_f1s[:current_epoch], "r-", label="Validation F1")
+            plt.plot(
+                range(1, current_epoch + 1),
+                self.val_f1s[:current_epoch],
+                "r-",
+                label="Validation F1",
+            )
         plt.title(f"Training and Validation F1 Score (Epoch {current_epoch})")
         plt.xlabel("Epochs")
         plt.ylabel("F1 Score")
@@ -151,27 +165,30 @@ class MLflowPlottingCallback(Callback):
 
         if "train_loss" in metrics:
             loss_val = metrics["train_loss"]
-            if hasattr(loss_val, 'item'):
+            if hasattr(loss_val, "item"):
                 self.train_losses.append(loss_val.item())
             else:
                 self.train_losses.append(float(loss_val))
 
         if "train_acc" in metrics:
             acc_val = metrics["train_acc"]
-            if hasattr(acc_val, 'item'):
+            if hasattr(acc_val, "item"):
                 self.train_accs.append(acc_val.item())
             else:
                 self.train_accs.append(float(acc_val))
 
         if "train_f1" in metrics:
             f1_val = metrics["train_f1"]
-            if hasattr(f1_val, 'item'):
+            if hasattr(f1_val, "item"):
                 self.train_f1s.append(f1_val.item())
             else:
                 self.train_f1s.append(float(f1_val))
 
         # Log plots every N steps
-        if self.step_count % self.log_every_n_steps == 0 and self.step_count != self.last_logged_step:
+        if (
+            self.step_count % self.log_every_n_steps == 0
+            and self.step_count != self.last_logged_step
+        ):
             self.last_logged_step = self.step_count
             self._log_plots_to_mlflow(trainer)
 
@@ -179,21 +196,21 @@ class MLflowPlottingCallback(Callback):
         """Collect validation metrics after each validation epoch."""
         if "val_loss" in trainer.logged_metrics:
             val_loss = trainer.logged_metrics["val_loss"]
-            if hasattr(val_loss, 'item'):
+            if hasattr(val_loss, "item"):
                 self.val_losses.append(val_loss.item())
             else:
                 self.val_losses.append(float(val_loss))
 
         if "val_acc" in trainer.logged_metrics:
             val_acc = trainer.logged_metrics["val_acc"]
-            if hasattr(val_acc, 'item'):
+            if hasattr(val_acc, "item"):
                 self.val_accs.append(val_acc.item())
             else:
                 self.val_accs.append(float(val_acc))
 
         if "val_f1" in trainer.logged_metrics:
             val_f1 = trainer.logged_metrics["val_f1"]
-            if hasattr(val_f1, 'item'):
+            if hasattr(val_f1, "item"):
                 self.val_f1s.append(val_f1.item())
             else:
                 self.val_f1s.append(float(val_f1))
@@ -205,61 +222,134 @@ class MLflowPlottingCallback(Callback):
 
         # Create a comprehensive training progress plot
         fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(16, 12))
-        fig.suptitle(f"Training Progress at Step {self.step_count}", fontsize=16, fontweight='bold')
+        fig.suptitle(
+            f"Training Progress at Step {self.step_count}",
+            fontsize=16,
+            fontweight="bold",
+        )
 
         steps = range(1, len(self.train_losses) + 1)
 
         # Loss plot
-        ax1.plot(steps, self.train_losses, 'b-', linewidth=2, label='Training Loss', alpha=0.7)
+        ax1.plot(
+            steps,
+            self.train_losses,
+            "b-",
+            linewidth=2,
+            label="Training Loss",
+            alpha=0.7,
+        )
         if self.val_losses:
-            # Estimate where validation points should be placed (typically at epoch boundaries)
+            # Estimate where validation points should be placed
+            # (typically at epoch boundaries)
             steps_per_val = len(self.train_losses) // max(1, len(self.val_losses))
-            val_steps = [min((i + 1) * steps_per_val, len(self.train_losses)) for i in range(len(self.val_losses))]
-            ax1.plot(val_steps, self.val_losses, 'r-', linewidth=2, marker='o', markersize=8, label='Validation Loss')
-        ax1.set_title('Loss', fontweight='bold')
-        ax1.set_xlabel('Training Steps')
-        ax1.set_ylabel('Loss')
+            val_steps = [
+                min((i + 1) * steps_per_val, len(self.train_losses))
+                for i in range(len(self.val_losses))
+            ]
+            ax1.plot(
+                val_steps,
+                self.val_losses,
+                "r-",
+                linewidth=2,
+                marker="o",
+                markersize=8,
+                label="Validation Loss",
+            )
+        ax1.set_title("Loss", fontweight="bold")
+        ax1.set_xlabel("Training Steps")
+        ax1.set_ylabel("Loss")
         ax1.legend()
         ax1.grid(True, alpha=0.3)
 
         # Accuracy plot
         if self.train_accs:
             acc_steps = range(1, len(self.train_accs) + 1)
-            ax2.plot(acc_steps, self.train_accs, 'g-', linewidth=2, label='Training Accuracy', alpha=0.7)
+            ax2.plot(
+                acc_steps,
+                self.train_accs,
+                "g-",
+                linewidth=2,
+                label="Training Accuracy",
+                alpha=0.7,
+            )
             if self.val_accs:
                 steps_per_val = len(self.train_accs) // max(1, len(self.val_accs))
-                val_acc_steps = [min((i + 1) * steps_per_val, len(self.train_accs)) for i in range(len(self.val_accs))]
-                ax2.plot(val_acc_steps, self.val_accs, 'orange', linewidth=2, marker='s', markersize=8, label='Validation Accuracy')
-            ax2.set_title('Accuracy', fontweight='bold')
-            ax2.set_xlabel('Training Steps')
-            ax2.set_ylabel('Accuracy')
+                val_acc_steps = [
+                    min((i + 1) * steps_per_val, len(self.train_accs))
+                    for i in range(len(self.val_accs))
+                ]
+                ax2.plot(
+                    val_acc_steps,
+                    self.val_accs,
+                    "orange",
+                    linewidth=2,
+                    marker="s",
+                    markersize=8,
+                    label="Validation Accuracy",
+                )
+            ax2.set_title("Accuracy", fontweight="bold")
+            ax2.set_xlabel("Training Steps")
+            ax2.set_ylabel("Accuracy")
             ax2.legend()
             ax2.grid(True, alpha=0.3)
         else:
-            ax2.text(0.5, 0.5, 'Accuracy data\nnot available yet', ha='center', va='center',
-                    transform=ax2.transAxes, fontsize=12)
-            ax2.set_title('Accuracy', fontweight='bold')
+            ax2.text(
+                0.5,
+                0.5,
+                "Accuracy data\nnot available yet",
+                ha="center",
+                va="center",
+                transform=ax2.transAxes,
+                fontsize=12,
+            )
+            ax2.set_title("Accuracy", fontweight="bold")
 
         # F1 Score plot
         if self.train_f1s:
             f1_steps = range(1, len(self.train_f1s) + 1)
-            ax3.plot(f1_steps, self.train_f1s, 'purple', linewidth=2, label='Training F1', alpha=0.7)
+            ax3.plot(
+                f1_steps,
+                self.train_f1s,
+                "purple",
+                linewidth=2,
+                label="Training F1",
+                alpha=0.7,
+            )
             if self.val_f1s:
                 steps_per_val = len(self.train_f1s) // max(1, len(self.val_f1s))
-                val_f1_steps = [min((i + 1) * steps_per_val, len(self.train_f1s)) for i in range(len(self.val_f1s))]
-                ax3.plot(val_f1_steps, self.val_f1s, 'brown', linewidth=2, marker='^', markersize=8, label='Validation F1')
-            ax3.set_title('F1 Score', fontweight='bold')
-            ax3.set_xlabel('Training Steps')
-            ax3.set_ylabel('F1 Score')
+                val_f1_steps = [
+                    min((i + 1) * steps_per_val, len(self.train_f1s))
+                    for i in range(len(self.val_f1s))
+                ]
+                ax3.plot(
+                    val_f1_steps,
+                    self.val_f1s,
+                    "brown",
+                    linewidth=2,
+                    marker="^",
+                    markersize=8,
+                    label="Validation F1",
+                )
+            ax3.set_title("F1 Score", fontweight="bold")
+            ax3.set_xlabel("Training Steps")
+            ax3.set_ylabel("F1 Score")
             ax3.legend()
             ax3.grid(True, alpha=0.3)
         else:
-            ax3.text(0.5, 0.5, 'F1 data\nnot available yet', ha='center', va='center',
-                    transform=ax3.transAxes, fontsize=12)
-            ax3.set_title('F1 Score', fontweight='bold')
+            ax3.text(
+                0.5,
+                0.5,
+                "F1 data\nnot available yet",
+                ha="center",
+                va="center",
+                transform=ax3.transAxes,
+                fontsize=12,
+            )
+            ax3.set_title("F1 Score", fontweight="bold")
 
         # Summary info
-        ax4.axis('off')
+        ax4.axis("off")
         info_text = f"Training Step: {self.step_count}\n\n"
         info_text += "=" * 35 + "\n"
         if self.train_losses:
@@ -278,63 +368,95 @@ class MLflowPlottingCallback(Callback):
             info_text += f"Validation F1 Score:{self.val_f1s[-1]:.4f}\n"
         info_text += "=" * 35
 
-        ax4.text(0.1, 0.85, info_text, transform=ax4.transAxes, fontsize=11,
-                verticalalignment='top', family='monospace',
-                bbox=dict(boxstyle="round,pad=0.5", facecolor="lightblue", alpha=0.6))
+        ax4.text(
+            0.1,
+            0.85,
+            info_text,
+            transform=ax4.transAxes,
+            fontsize=11,
+            verticalalignment="top",
+            family="monospace",
+            bbox=dict(boxstyle="round,pad=0.5", facecolor="lightblue", alpha=0.6),
+        )
 
         plt.tight_layout()
 
         # Save plot locally
         plot_path = self.plot_dir / f"training_progress_step_{self.step_count}.png"
-        plt.savefig(plot_path, dpi=100, bbox_inches='tight')
+        plt.savefig(plot_path, dpi=100, bbox_inches="tight")
         plt.close()
 
         # Log to MLflow using trainer's logger
         try:
-            if hasattr(trainer, 'logger') and trainer.logger is not None:
+            if hasattr(trainer, "logger") and trainer.logger is not None:
                 # Log the artifact using trainer's logger experiment
                 trainer.logger.experiment.log_artifact(
                     trainer.logger.run_id,
                     str(plot_path),
-                    artifact_path="training_plots"
+                    artifact_path="training_plots",
                 )
 
-                # Also log current metrics to MLflow as step-based metrics using trainer's logger
+                # Also log current metrics to MLflow as step-based metrics
+                # using trainer's logger
                 if self.train_losses:
                     trainer.logger.experiment.log_metric(
-                        trainer.logger.run_id, "step_train_loss", self.train_losses[-1],
-                        timestamp=int(time.time() * 1000), step=self.step_count
+                        trainer.logger.run_id,
+                        "step_train_loss",
+                        self.train_losses[-1],
+                        timestamp=int(time.time() * 1000),
+                        step=self.step_count,
                     )
                 if self.train_accs:
                     trainer.logger.experiment.log_metric(
-                        trainer.logger.run_id, "step_train_accuracy", self.train_accs[-1],
-                        timestamp=int(time.time() * 1000), step=self.step_count
+                        trainer.logger.run_id,
+                        "step_train_accuracy",
+                        self.train_accs[-1],
+                        timestamp=int(time.time() * 1000),
+                        step=self.step_count,
                     )
                 if self.train_f1s:
                     trainer.logger.experiment.log_metric(
-                        trainer.logger.run_id, "step_train_f1", self.train_f1s[-1],
-                        timestamp=int(time.time() * 1000), step=self.step_count
+                        trainer.logger.run_id,
+                        "step_train_f1",
+                        self.train_f1s[-1],
+                        timestamp=int(time.time() * 1000),
+                        step=self.step_count,
                     )
                 if self.val_losses:
                     trainer.logger.experiment.log_metric(
-                        trainer.logger.run_id, "step_val_loss", self.val_losses[-1],
-                        timestamp=int(time.time() * 1000), step=self.step_count
+                        trainer.logger.run_id,
+                        "step_val_loss",
+                        self.val_losses[-1],
+                        timestamp=int(time.time() * 1000),
+                        step=self.step_count,
                     )
                 if self.val_accs:
                     trainer.logger.experiment.log_metric(
-                        trainer.logger.run_id, "step_val_accuracy", self.val_accs[-1],
-                        timestamp=int(time.time() * 1000), step=self.step_count
+                        trainer.logger.run_id,
+                        "step_val_accuracy",
+                        self.val_accs[-1],
+                        timestamp=int(time.time() * 1000),
+                        step=self.step_count,
                     )
                 if self.val_f1s:
                     trainer.logger.experiment.log_metric(
-                        trainer.logger.run_id, "step_val_f1", self.val_f1s[-1],
-                        timestamp=int(time.time() * 1000), step=self.step_count
+                        trainer.logger.run_id,
+                        "step_val_f1",
+                        self.val_f1s[-1],
+                        timestamp=int(time.time() * 1000),
+                        step=self.step_count,
                     )
 
-                print(f"✓ Logged training progress plot and metrics to MLflow at step {self.step_count}")
+                print(
+                    f"✓ Logged training progress plot and metrics to "
+                    f"MLflow at step {self.step_count}"
+                )
             else:
-                print(f"⚠ Warning: Trainer logger not available at step {self.step_count}")
+                print(
+                    f"⚠ Warning: Trainer logger not available at step {self.step_count}"
+                )
         except Exception as e:
             import traceback
+
             print(f"✗ Failed to log plot to MLflow at step {self.step_count}: {e}")
             print(f"   Traceback: {traceback.format_exc()}")

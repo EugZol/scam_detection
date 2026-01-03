@@ -6,7 +6,7 @@ Export model to ONNX format.
 import torch
 from transformers import AutoTokenizer
 
-from scam_detection.models.lit_module import EmailClassifier
+from scam_detection.models.lit_module import MessageClassifier
 
 
 def export_to_onnx(
@@ -24,7 +24,7 @@ def export_to_onnx(
         tokenizer_name: Tokenizer name
     """
     # Load model
-    model = EmailClassifier.load_from_checkpoint(
+    model = MessageClassifier.load_from_checkpoint(
         model_path, model_type=model_type, tokenizer_name=tokenizer_name
     )
 

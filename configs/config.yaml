@@ -7,5 +7,5 @@ defaults:
   - _self_
 
 seed: 42
-experiment_name: email_classification
+experiment_name: message_classification
 output_dir: outputs

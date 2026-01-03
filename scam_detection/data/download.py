@@ -5,10 +5,10 @@ import requests
 
 
 def download_data(
-    url: str = "https://example.com/Phishing_Email.csv.zip", data_dir: str = "data"
+    url: str = "https://example.com/scam_messages.csv.zip", data_dir: str = "data"
 ) -> None:
     """
-    Download the phishing email dataset from the given URL and unzip it.
+    Download the scam message dataset from the given URL and unzip it.
 
     Args:
         url: URL to download the zip file from
@@ -16,8 +16,8 @@ def download_data(
     """
     data_path = Path(data_dir)
     data_path.mkdir(exist_ok=True)
-    zip_path = data_path / "Phishing_Email.csv.zip"
-    csv_path = data_path / "Phishing_Email.csv"
+    zip_path = data_path / "scam_messages.csv.zip"
+    csv_path = data_path / "scam_messages.csv"
 
     if csv_path.exists():
         print(f"Data already exists at {csv_path}")

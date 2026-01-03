@@ -3,5 +3,5 @@ weight_decay: 0.01
 warmup_steps: 0
 max_epochs: 1
 patience: 3
-mlflow_experiment: email_classification
+mlflow_experiment: message_classification
 cpu_threads: 20
