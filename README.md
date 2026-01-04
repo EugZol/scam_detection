@@ -78,26 +78,25 @@ uv run python -m scam_detection.commands train train.max_epochs=10 data.batch_si
 
 The training process includes data preprocessing, model training with PyTorch Lightning, validation with early stopping, metrics logging to MLflow, and checkpoint saving to `models/checkpoints/`.
 
-### Production Preparation
+### Production preparation
 
 **Export model to ONNX format:**
 
 Only available for transformer model, not baseline.
 
 ```bash
-# Interactive: Auto-detect and select checkpoint
+# Interactive: select default checkpoint
 uv run python -m scam_detection.commands export
 
-# Specify model and output paths
+# Specify checkpoint and output paths
 uv run python -m scam_detection.commands export -m models/checkpoints/best.ckpt -o models/onnx/model.onnx
-
-# Using Hydra overrides
-uv run python -m scam_detection.commands export export.model_path=models/checkpoints/best.ckpt
 ```
 
-The exported ONNX model is optimized for inference and can be deployed in production environments.
+The exported ONNX model be deployed in production environments.
 
 ### Infer
+
+Note: ONNX model is used for transformer's inference (so you should export first as described above) and MLflow saved model for baseline TF-IDF.
 
 Run inference on new messages:
 

@@ -24,10 +24,14 @@ def load_and_preprocess_data(csv_path: str) -> pd.DataFrame:
 
 
 def prepare_tfidf_features(
-    texts: List[str], vectorizer: TfidfVectorizer = None, fit: bool = True
+    texts: List[str],
+    vectorizer: TfidfVectorizer = None,
+    fit: bool = True,
+    max_features: int = 5000,
+    stop_words: str = "english"
 ) -> TfidfVectorizer:
     if vectorizer is None:
-        vectorizer = TfidfVectorizer(max_features=5000, stop_words="english")
+        vectorizer = TfidfVectorizer(max_features=max_features, stop_words=stop_words)
     if fit:
         vectorizer.fit(texts)
     return vectorizer

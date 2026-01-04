@@ -80,7 +80,7 @@ def train_transformer_model(
             mlflow_plotting_callback,
         ],
         "logger": logger,
-        "log_every_n_steps": 1,
+        "log_every_n_steps": log_every_n_steps,
         "accelerator": "cpu",
     }
 
@@ -140,7 +140,7 @@ def train_transformer_model(
 
 def train_tfidf_model(
     datamodule: MessageDataModule,
-    model_type: str,
+    model_config,
     mlflow_experiment: str = "message_classification",
     mlflow_tracking_uri: str = "http://127.0.0.1:8080",
     log_model: bool = True,
@@ -172,7 +172,13 @@ def train_tfidf_model(
         y_val.extend(batch["label"].numpy())
 
     start_time = time.time()
-    model = MessageClassifier(model_type="tfidf").model
+    model = MessageClassifier(
+        model_type=model_config.model_type,
+        max_features=model_config.max_features,
+        stop_words=model_config.stop_words,
+        random_state=model_config.random_state,
+        max_iter=model_config.max_iter
+    ).model
     model.fit(X_train, y_train)
     training_time = time.time() - start_time
 
@@ -189,9 +195,11 @@ def train_tfidf_model(
         mlflow.set_tag("task", "scam_message_detection")
         mlflow.set_tag("framework", "scikit-learn")
 
-        mlflow.log_param("vectorizer_max_features", 5000)
-        mlflow.log_param("vectorizer_stop_words", "english")
+        mlflow.log_param("vectorizer_max_features", model_config.max_features)
+        mlflow.log_param("vectorizer_stop_words", model_config.stop_words)
         mlflow.log_param("classifier_type", "LogisticRegression")
+        mlflow.log_param("random_state", model_config.random_state)
+        mlflow.log_param("max_iter", model_config.max_iter)
 
         mlflow.log_param("train_samples", len(X_train))
         mlflow.log_param("val_samples", len(X_val))
@@ -205,7 +213,7 @@ def train_tfidf_model(
             mlflow.sklearn.log_model(
                 model,
                 "model",
-                registered_model_name=model_type,
+                registered_model_name=model_config.model_type,
             )
 
     return model

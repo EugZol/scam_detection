@@ -4,10 +4,16 @@ from sklearn.pipeline import Pipeline
 
 
 class TfidfClassifier:
-    def __init__(self):
+    def __init__(
+        self,
+        max_features: int = 5000,
+        stop_words: str = 'english',
+        random_state: int = 42,
+        max_iter: int = 1000
+    ):
         self.model = Pipeline([
-            ('tfidf', TfidfVectorizer(max_features=5000, stop_words='english')),
-            ('classifier', LogisticRegression(random_state=42, max_iter=1000))
+            ('tfidf', TfidfVectorizer(max_features=max_features, stop_words=stop_words)),
+            ('classifier', LogisticRegression(random_state=random_state, max_iter=max_iter))
         ])
 
     def fit(self, X_train, y_train):

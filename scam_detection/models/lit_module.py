@@ -24,13 +24,16 @@ class MessageClassifier(pl.LightningModule):
         weight_decay: float = 0.01,
         warmup_steps: int = 0,
         max_epochs: int = 10,
-        # small transformer params
         small_d_model: int = 384,
         small_n_heads: int = 6,
         small_n_layers: int = 6,
         small_ffn_dim: int = 1536,
         small_dropout: float = 0.1,
         max_length: int = 512,
+        max_features: int = 5000,
+        stop_words: str = "english",
+        random_state: int = 42,
+        max_iter: int = 1000,
     ):
         super().__init__()
         self.save_hyperparameters()
@@ -52,7 +55,12 @@ class MessageClassifier(pl.LightningModule):
             )
             self.model = SmallTransformerForSequenceClassification(cfg)
         elif model_type == "tfidf":
-            self.model = TfidfClassifier()
+            self.model = TfidfClassifier(
+                max_features=max_features,
+                stop_words=stop_words,
+                random_state=random_state,
+                max_iter=max_iter
+            )
         else:
             raise ValueError(f"Unknown model_type: {model_type}")
 

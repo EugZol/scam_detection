@@ -75,7 +75,7 @@ def train(cfg: DictConfig):
     elif cfg.model.model_type == "tfidf":
         train_tfidf_model(
             datamodule=datamodule,
-            model_type=cfg.model.model_type,
+            model_config=cfg.model,
             mlflow_experiment=cfg.train.mlflow_experiment,
             mlflow_tracking_uri=cfg.logging.mlflow_tracking_uri,
             log_model=log_model,
