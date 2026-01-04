@@ -135,17 +135,36 @@ def train_transformer_model(
     trainer.test(model, datamodule)
 
     if log_model and fast_dev_run == 0:
-        import mlflow.pytorch
+        import tempfile
+
+        import mlflow.pyfunc
+        from transformers import AutoTokenizer
+
+        from ..serving.mlflow_model import MessageClassifierWrapper
 
         setup_mlflow_tracking(mlflow_tracking_uri)
         mlflow.set_experiment(mlflow_experiment)
 
         with mlflow.start_run(run_id=trainer.logger.run_id):
-            mlflow.pytorch.log_model(
-                model,
-                "model",
-                registered_model_name=model_config.model_type,
-            )
+            with tempfile.TemporaryDirectory() as tmpdir:
+                checkpoint_path = Path(tmpdir) / "model.ckpt"
+                trainer.save_checkpoint(checkpoint_path)
+
+                tokenizer = AutoTokenizer.from_pretrained(model_config.tokenizer_name)
+                tokenizer_path = Path(tmpdir) / "tokenizer"
+                tokenizer.save_pretrained(tokenizer_path)
+
+                artifacts = {
+                    "model_checkpoint": str(checkpoint_path),
+                    "tokenizer": str(tokenizer_path),
+                }
+
+                mlflow.pyfunc.log_model(
+                    artifact_path="model",
+                    python_model=MessageClassifierWrapper(),
+                    artifacts=artifacts,
+                    registered_model_name=model_config.model_type,
+                )
 
     return model
 

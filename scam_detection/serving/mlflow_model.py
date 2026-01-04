@@ -1,22 +1,50 @@
+import os
+
 import mlflow
+import numpy as np
 import pandas as pd
 import torch
 from transformers import AutoTokenizer
 
-from ..models.lit_module import MessageClassifier
-
 
 class MessageClassifierWrapper(mlflow.pyfunc.PythonModel):
-    def __init__(self, model: MessageClassifier, tokenizer: AutoTokenizer = None):
-        self.model = model
-        self.tokenizer = tokenizer
+    def load_context(self, context):
+        import pickle
+
+        checkpoint_path = context.artifacts["model_checkpoint"]
+        from ..models.lit_module import MessageClassifier
+
+        self.model = MessageClassifier.load_from_checkpoint(checkpoint_path)
         self.model.eval()
+
+        if "tokenizer" in context.artifacts:
+            tokenizer_path = context.artifacts["tokenizer"]
+            self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
+        else:
+            self.tokenizer = None
 
     def predict(self, context, model_input):
         if isinstance(model_input, pd.DataFrame):
-            texts = model_input.iloc[:, 0].tolist()
+            texts = model_input.iloc[:, 0].astype(str).tolist()
+        elif isinstance(model_input, np.ndarray):
+            if model_input.ndim == 1:
+                texts = model_input.astype(str).tolist()
+            elif model_input.ndim == 2 and model_input.shape[1] >= 1:
+                texts = model_input[:, 0].astype(str).tolist()
+            else:
+                raise ValueError(
+                    f"Unsupported ndarray shape: {model_input.shape}. "
+                    "Expected (n,) or (n,1)."
+                )
+        elif isinstance(model_input, (list, tuple, pd.Series)):
+            texts = [str(x) for x in list(model_input)]
+        elif isinstance(model_input, dict) and "inputs" in model_input:
+            texts = [str(x) for x in model_input["inputs"]]
         else:
-            texts = model_input
+            raise ValueError(
+                f"Unsupported input type: {type(model_input)}. "
+                "Expected DataFrame, ndarray, list/tuple/Series, or dict with 'inputs' key."
+            )
 
         if self.model.model_type == "small_transformer":
             if self.tokenizer is None:
@@ -33,7 +61,7 @@ class MessageClassifierWrapper(mlflow.pyfunc.PythonModel):
             batch = {
                 "input_ids": inputs["input_ids"],
                 "attention_mask": inputs["attention_mask"],
-                "label": torch.zeros(len(texts), dtype=torch.long),  # dummy labels
+                "label": torch.zeros(len(texts), dtype=torch.long),
             }
 
             with torch.no_grad():
