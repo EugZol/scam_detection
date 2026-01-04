@@ -28,7 +28,7 @@ def prepare_tfidf_features(
     vectorizer: TfidfVectorizer = None,
     fit: bool = True,
     max_features: int = 5000,
-    stop_words: str = "english"
+    stop_words: str = "english",
 ) -> TfidfVectorizer:
     if vectorizer is None:
         vectorizer = TfidfVectorizer(max_features=max_features, stop_words=stop_words)

@@ -84,6 +84,7 @@ def train(cfg: DictConfig):
 
 def infer(cfg: DictConfig):
     import ast
+
     import mlflow.sklearn
 
     model_type = cfg.model.model_type

@@ -177,7 +177,7 @@ def train_tfidf_model(
         max_features=model_config.max_features,
         stop_words=model_config.stop_words,
         random_state=model_config.random_state,
-        max_iter=model_config.max_iter
+        max_iter=model_config.max_iter,
     ).model
     model.fit(X_train, y_train)
     training_time = time.time() - start_time

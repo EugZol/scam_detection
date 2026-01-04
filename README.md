@@ -150,4 +150,12 @@ Test suite includes some smoke tests and CLI interface tests.
 
 ## Data preparation
 
-Data is handled with DVC.
+Data is a CSV file with columns:
+- `Message Text`: String containing the message content
+- `Message Type`: Classification label ("Safe Message" or "Scam Message")
+
+Data is managed with DVC and downloaded from a remote source. During training, data is automatically pulled if not present locally. To manually download or update the data file, run:
+
+```bash
+dvc pull
+```

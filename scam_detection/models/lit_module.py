@@ -59,7 +59,7 @@ class MessageClassifier(pl.LightningModule):
                 max_features=max_features,
                 stop_words=stop_words,
                 random_state=random_state,
-                max_iter=max_iter
+                max_iter=max_iter,
             )
         else:
             raise ValueError(f"Unknown model_type: {model_type}")

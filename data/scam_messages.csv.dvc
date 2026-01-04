@@ -1,3 +1,10 @@
+md5: d751acdd69297cc0ffd78ed401ab21ea
+frozen: true
+deps:
+- checksum: '"69595c3a-31a1b64"'
+  size: 52042596
+  hash: md5
+  path: http://155.212.165.34:8080/scam_messages.csv
 outs:
 - md5: 4aa543ecd686bf8ecf69741af87cefdc
   size: 52042596

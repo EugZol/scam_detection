@@ -1,11 +1,10 @@
 import lightning.pytorch as pl
-import torch
 from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader
 from transformers import AutoTokenizer
 
-from .dataset import MessageDataset, TfidfMessageDataset
-from .preprocessing import load_and_preprocess_data, prepare_tfidf_features
+from .dataset import MessageDataset
+from .preprocessing import load_and_preprocess_data
 
 
 class MessageDataModule(pl.LightningDataModule):
