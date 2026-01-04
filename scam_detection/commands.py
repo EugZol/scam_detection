@@ -87,18 +87,17 @@ def infer(cfg: DictConfig):
 
     import mlflow.sklearn
 
-    model_type = cfg.model.model_type
-    tokenizer_name = cfg.model.tokenizer_name
-
     mlflow_tracking_uri = cfg.logging.mlflow_tracking_uri
     setup_mlflow_tracking(mlflow_tracking_uri)
 
+    model_type = cfg.model.model_type
+    if model_type == "small_transformer":
+        tokenizer_name = cfg.model.tokenizer_name
+
     if model_type == "tfidf":
-        # For TF-IDF models, load from MLflow registry instead of checkpoint
         print("Loading TF-IDF model from MLflow...")
         try:
             model = mlflow.sklearn.load_model(f"models:/{model_type}/latest")
-            # Wrap in MessageClassifier for consistency
             message_classifier = MessageClassifier(model_type="tfidf")
             message_classifier.model = model
             predictor = Predictor(message_classifier, tokenizer=None)
@@ -107,7 +106,6 @@ def infer(cfg: DictConfig):
             print("Make sure you have trained and registered a TF-IDF model first.")
             return
     else:
-        # For transformer models, load from checkpoint
         if "model_path" not in cfg.infer:
             print("Error: model_path is required for inference")
             print(

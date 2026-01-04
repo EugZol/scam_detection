@@ -4,5 +4,5 @@ warmup_steps: 0
 max_epochs: 1
 patience: 3
 mlflow_experiment: message_classification
-cpu_threads: 20
+cpu_threads: 5
 log_model: true

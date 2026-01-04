@@ -362,12 +362,6 @@ class MLflowPlottingCallback(Callback):
 
         try:
             if hasattr(trainer, "logger") and trainer.logger is not None:
-                trainer.logger.experiment.log_artifact(
-                    trainer.logger.run_id,
-                    str(plot_path),
-                    artifact_path="training_plots",
-                )
-
                 if self.train_losses:
                     trainer.logger.experiment.log_metric(
                         trainer.logger.run_id,
