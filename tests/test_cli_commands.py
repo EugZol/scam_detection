@@ -47,11 +47,11 @@ def test_train_baseline(hydra_context, test_dirs, tiny_dataset_path):
             "model=baseline",
             f"data.csv_path={tiny_dataset_path}",
             "data.batch_size=2",
-            "data.test_size=0.2",  # 20% test, sufficient for 10 samples
-            "data.val_size=0.2",  # 20% val from remaining
+            "data.test_size=0.2",
+            "data.val_size=0.2",
             f"logging.mlflow_tracking_uri=file://{test_dirs['mlruns']}",
             "train.mlflow_experiment=test_baseline",
-            "train.log_model=false",  # Skip slow model logging in tests
+            "train.log_model=false",
         ],
     )
 

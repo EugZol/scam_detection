@@ -5,10 +5,7 @@ from lightning.pytorch.loggers import MLFlowLogger
 
 from ..data.datamodule import MessageDataModule
 from ..models.lit_module import MessageClassifier
-from ..tracking.mlflow import (
-    log_git_commit,
-    setup_mlflow_tracking,
-)
+from ..tracking.mlflow import log_git_commit, setup_mlflow_tracking
 from .callbacks import MLflowPlottingCallback, PlottingCallback
 
 

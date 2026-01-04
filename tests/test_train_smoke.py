@@ -22,10 +22,10 @@ def test_datamodule():
     train_loader = datamodule.train_dataloader()
     batch = next(iter(train_loader))
 
-    assert "features" in batch
+    assert "text" in batch
     assert "label" in batch
 
-    assert batch["features"].shape[0] <= 2
+    assert len(batch["text"]) <= 2
     assert batch["label"].shape[0] <= 2
 
     assert torch.all((batch["label"] == 0) | (batch["label"] == 1))
