@@ -88,9 +88,9 @@ def infer(cfg: DictConfig):
     import mlflow.sklearn
 
     model_type = cfg.model.model_type
-    tokenizer_name = cfg.model.get("tokenizer_name", "distilbert-base-uncased")
+    tokenizer_name = cfg.model.tokenizer_name
 
-    mlflow_tracking_uri = cfg.logging.get("mlflow_tracking_uri", "./mlruns")
+    mlflow_tracking_uri = cfg.logging.mlflow_tracking_uri
     setup_mlflow_tracking(mlflow_tracking_uri)
 
     if model_type == "tfidf":

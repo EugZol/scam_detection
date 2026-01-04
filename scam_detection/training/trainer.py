@@ -6,7 +6,6 @@ from lightning.pytorch.loggers import MLFlowLogger
 from ..data.datamodule import MessageDataModule
 from ..models.lit_module import MessageClassifier
 from ..tracking.mlflow import (
-    ensure_experiment_exists,
     log_git_commit,
     setup_mlflow_tracking,
 )
@@ -33,10 +32,9 @@ def train_transformer_model(
         torch.set_num_interop_threads(cpu_threads)
         print(f"Configured PyTorch to use {cpu_threads} CPU threads for training")
     except RuntimeError:
-        print("PyTorch threads already configured, skipping")
+        print("PyTorch threads not configured, skipping")
 
     setup_mlflow_tracking(mlflow_tracking_uri)
-    ensure_experiment_exists(mlflow_experiment)
 
     import mlflow
 
