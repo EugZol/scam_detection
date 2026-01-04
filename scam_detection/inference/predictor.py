@@ -31,4 +31,4 @@ class Predictor:
                 preds = torch.argmax(logits, dim=1)
             return preds.tolist()
         elif self.model.model_type == "tfidf":
-            return [0] * len(texts)
+            return self.model.model.predict(texts)

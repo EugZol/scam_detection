@@ -75,28 +75,20 @@ class MessageDataModule(pl.LightningDataModule):
                 self.max_length,
             )
         elif self.model_type == "tfidf":
-            self.vectorizer = prepare_tfidf_features(train_df["text"].tolist())
-
-            train_features = torch.tensor(
-                self.vectorizer.transform(train_df["text"]).toarray(),
-                dtype=torch.float32,
+            self.train_dataset = MessageDataset(
+                train_df["text"].tolist(),
+                train_df["label"].tolist(),
+                tokenizer=None,
             )
-            val_features = torch.tensor(
-                self.vectorizer.transform(val_df["text"]).toarray(), dtype=torch.float32
+            self.val_dataset = MessageDataset(
+                val_df["text"].tolist(),
+                val_df["label"].tolist(),
+                tokenizer=None,
             )
-            test_features = torch.tensor(
-                self.vectorizer.transform(test_df["text"]).toarray(),
-                dtype=torch.float32,
-            )
-
-            self.train_dataset = TfidfMessageDataset(
-                train_features, train_df["label"].tolist()
-            )
-            self.val_dataset = TfidfMessageDataset(
-                val_features, val_df["label"].tolist()
-            )
-            self.test_dataset = TfidfMessageDataset(
-                test_features, test_df["label"].tolist()
+            self.test_dataset = MessageDataset(
+                test_df["text"].tolist(),
+                test_df["label"].tolist(),
+                tokenizer=None,
             )
 
     def train_dataloader(self):

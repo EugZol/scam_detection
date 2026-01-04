@@ -2,6 +2,10 @@
 
 This project implements a machine learning pipeline for detecting scam messages (scam detection) using text classification. The pipeline includes data preprocessing, model training, and inference capabilities.
 
+## Screenshots
+
+
+
 ## Message classification
 
 The goal of this project is to develop an automated system that can classify messages as either "Safe Message" or "Scam Message" based on their textual content. This is achieved through natural language processing techniques and machine learning models.
@@ -106,7 +110,7 @@ uv run python -m scam_detection.commands infer \
 # Inference from file (one message per line)
 uv run python -m scam_detection.commands infer \
   infer.model_path=models/checkpoints/best.ckpt \
-  infer.input_file=messages.txt
+  infer.input_file=readme_assets/messages.txt
 ```
 
 **Input format:**

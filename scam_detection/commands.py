@@ -84,19 +84,7 @@ def train(cfg: DictConfig):
 
 def infer(cfg: DictConfig):
     import ast
-
-    if "model_path" not in cfg.infer:
-        print("Error: model_path is required for inference")
-        print(
-            "Example: python -m scam_detection.commands infer "
-            "infer.model_path=path/to/model.ckpt"
-        )
-        return
-
-    model_path = Path(cfg.infer.model_path)
-    if not model_path.exists():
-        print(f"Error: Model file {model_path} not found")
-        return
+    import mlflow.sklearn
 
     model_type = cfg.model.model_type
     tokenizer_name = cfg.model.get("tokenizer_name", "distilbert-base-uncased")
@@ -104,20 +92,45 @@ def infer(cfg: DictConfig):
     mlflow_tracking_uri = cfg.logging.get("mlflow_tracking_uri", "./mlruns")
     setup_mlflow_tracking(mlflow_tracking_uri)
 
-    print(f"Loading model from {model_path}...")
-    model = MessageClassifier.load_from_checkpoint(
-        str(model_path),
-        model_type=model_type,
-        tokenizer_name=tokenizer_name,
-    )
+    if model_type == "tfidf":
+        # For TF-IDF models, load from MLflow registry instead of checkpoint
+        print("Loading TF-IDF model from MLflow...")
+        try:
+            model = mlflow.sklearn.load_model(f"models:/{model_type}/latest")
+            # Wrap in MessageClassifier for consistency
+            message_classifier = MessageClassifier(model_type="tfidf")
+            message_classifier.model = model
+            predictor = Predictor(message_classifier, tokenizer=None)
+        except Exception as e:
+            print(f"Error loading TF-IDF model from MLflow: {e}")
+            print("Make sure you have trained and registered a TF-IDF model first.")
+            return
+    else:
+        # For transformer models, load from checkpoint
+        if "model_path" not in cfg.infer:
+            print("Error: model_path is required for inference")
+            print(
+                "Example: python -m scam_detection.commands infer "
+                "infer.model_path=path/to/model.ckpt"
+            )
+            return
 
-    tokenizer = None
-    if model_type == "small_transformer":
+        model_path = Path(cfg.infer.model_path)
+        if not model_path.exists():
+            print(f"Error: Model file {model_path} not found")
+            return
+
+        print(f"Loading model from {model_path}...")
+        model = MessageClassifier.load_from_checkpoint(
+            str(model_path),
+            model_type=model_type,
+            tokenizer_name=tokenizer_name,
+        )
+
         tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
+        predictor = Predictor(model, tokenizer)
 
-    predictor = Predictor(model, tokenizer)
-
-    if "texts" in cfg.infer:
+    if "texts" in cfg.infer and cfg.infer.texts is not None:
         texts_str = cfg.infer.texts
         if isinstance(texts_str, str):
             try:
@@ -126,7 +139,7 @@ def infer(cfg: DictConfig):
                 texts = [texts_str]
         else:
             texts = list(texts_str)
-    elif "input_file" in cfg.infer:
+    elif "input_file" in cfg.infer and cfg.infer.input_file is not None:
         input_file = Path(cfg.infer.input_file)
         if not input_file.exists():
             print(f"Error: Input file {input_file} not found")
@@ -298,6 +311,7 @@ def main():
 
     if len(sys.argv) < 2:
         print("Usage: python -m scam_detection.commands <command> [options]")
+        print("\nSee README.md for details")
         print("\nAvailable commands:")
         print("  train   - Train a model")
         print("  infer   - Run inference on texts")
@@ -309,7 +323,7 @@ def main():
             "  python -m scam_detection.commands export "
             "-m path/to/model.ckpt -o output.onnx"
         )
-        print("  python -m scam_detection.commands export  # Auto-detect checkpoint")
+        print("  python -m scam_detection.commands export")
         return
 
     command = sys.argv[1]

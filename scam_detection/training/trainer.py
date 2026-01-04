@@ -161,14 +161,14 @@ def train_tfidf_model(
     X_train = []
     y_train = []
     for batch in train_loader:
-        X_train.extend(batch["features"].numpy())
+        X_train.extend(batch["text"])
         y_train.extend(batch["label"].numpy())
 
     val_loader = datamodule.val_dataloader()
     X_val = []
     y_val = []
     for batch in val_loader:
-        X_val.extend(batch["features"].numpy())
+        X_val.extend(batch["text"])
         y_val.extend(batch["label"].numpy())
 
     start_time = time.time()
@@ -189,15 +189,13 @@ def train_tfidf_model(
         mlflow.set_tag("task", "scam_message_detection")
         mlflow.set_tag("framework", "scikit-learn")
 
-        mlflow.log_param(
-            "vectorizer_max_features", getattr(model, "max_features", "default")
-        )
+        mlflow.log_param("vectorizer_max_features", 5000)
         mlflow.log_param("vectorizer_stop_words", "english")
         mlflow.log_param("classifier_type", "LogisticRegression")
 
         mlflow.log_param("train_samples", len(X_train))
         mlflow.log_param("val_samples", len(X_val))
-        mlflow.log_param("feature_dim", X_train[0].shape[0] if X_train else 0)
+        mlflow.log_param("feature_dim", "auto")
 
         mlflow.log_metric("val_accuracy", acc)
         mlflow.log_metric("val_f1_score", f1)
