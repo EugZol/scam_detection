@@ -156,6 +156,7 @@ mlflow.db
 *.pkl
 *.joblib
 models/*
+mlartifacts/*
 
 # Data files (managed by DVC)
 *.csv

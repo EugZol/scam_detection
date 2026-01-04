@@ -48,7 +48,7 @@ Key features:
 
 6. **Start MLflow server (in separate terminal):**
    ```bash
-   mlflow server --host 127.0.0.1 --port 8080
+   uv run mlflow server --host 127.0.0.1 --port 8080
    ```
 
 ### Train
@@ -77,6 +77,8 @@ The training process includes data preprocessing, model training with PyTorch Li
 ### Production Preparation
 
 **Export model to ONNX format:**
+
+Only available for transformer model, not baseline.
 
 ```bash
 # Interactive: Auto-detect and select checkpoint
