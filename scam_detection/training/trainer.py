@@ -112,13 +112,6 @@ def train_transformer_model(
 
     trainer.fit(model, datamodule)
 
-    if checkpoint_callback.best_model_path:
-        trainer.logger.experiment.log_artifact(
-            trainer.logger.run_id,
-            checkpoint_callback.best_model_path,
-            artifact_path="best_model_checkpoint",
-        )
-
     trainer.test(model, datamodule)
 
     if log_model and fast_dev_run == 0:

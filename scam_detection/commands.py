@@ -106,18 +106,22 @@ def infer(cfg: DictConfig):
             print("Make sure you have trained and registered a TF-IDF model first.")
             return
     else:
-        if "model_path" not in cfg.infer:
-            print("Error: model_path is required for inference")
-            print(
-                "Example: python -m scam_detection.commands infer "
-                "infer.model_path=path/to/model.ckpt"
-            )
-            return
+        if "model_path" not in cfg.infer or cfg.infer.model_path is None:
+            print("No model_path specified, searching for checkpoints...")
+            checkpoints = _find_checkpoints()
+            if not checkpoints:
+                print("Error: No checkpoints found in models/checkpoints/")
+                print("Please train a model first or specify infer.model_path")
+                return
 
-        model_path = Path(cfg.infer.model_path)
-        if not model_path.exists():
-            print(f"Error: Model file {model_path} not found")
-            return
+            model_path = _select_checkpoint(checkpoints)
+            if model_path is None:
+                return
+        else:
+            model_path = Path(cfg.infer.model_path)
+            if not model_path.exists():
+                print(f"Error: Model file {model_path} not found")
+                return
 
         print(f"Loading model from {model_path}...")
         model = MessageClassifier.load_from_checkpoint(
@@ -233,17 +237,6 @@ def export(cfg: DictConfig):
     print(f"Successfully exported model to {onnx_path}")
 
 
-def serve(cfg: DictConfig):
-    print("MLflow serving is not yet fully implemented.")
-    print("To serve a model with MLflow:")
-    print("1. Ensure your model is logged to MLflow")
-    print("2. Run: mlflow models serve -m <model_uri> -p 8000")
-    print("\nConfiguration:")
-    print(f"  Host: {cfg.serve.get('host', '0.0.0.0')}")
-    print(f"  Port: {cfg.serve.get('port', 8000)}")
-    print(f"  Model Path: {cfg.serve.get('model_path', 'N/A')}")
-
-
 def _parse_export_flags(args):
     model_path = None
     output_path = None
@@ -315,7 +308,6 @@ def main():
         print("  train   - Train a model")
         print("  infer   - Run inference on texts")
         print("  export  - Export model to ONNX format")
-        print("  serve   - Start MLflow serving")
         print("\nExamples:")
         print("  python -m scam_detection.commands train model=baseline")
         print(
@@ -327,7 +319,7 @@ def main():
 
     command = sys.argv[1]
 
-    valid_commands = ["train", "infer", "export", "serve"]
+    valid_commands = ["train", "infer", "export"]
     if command not in valid_commands and "=" not in command:
         print(f"Error: Unknown command '{command}'")
         print(f"Valid commands: {', '.join(valid_commands)}")
@@ -390,8 +382,6 @@ def main():
         default_overrides = ["+infer=default"]
     elif command == "export":
         default_overrides = ["+export=default"]
-    elif command == "serve":
-        default_overrides = ["+serve=default"]
     else:
         default_overrides = []
 
@@ -404,8 +394,6 @@ def main():
         infer(cfg)
     elif command == "export":
         export(cfg)
-    elif command == "serve":
-        serve(cfg)
 
 
 if __name__ == "__main__":

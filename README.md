@@ -96,20 +96,27 @@ The exported ONNX model be deployed in production environments.
 
 ### Infer
 
-Note: ONNX model is used for transformer's inference (so you should export first as described above) and MLflow saved model for baseline TF-IDF.
-
-Run inference on new messages:
+Run inference on new messages using trained models:
+- **Transformer model**: Uses PyTorch checkpoint files (`.ckpt`) from `models/checkpoints/`
+- **TF-IDF model**: Uses MLflow registered model
 
 ```bash
-# Inference with text input
+# Inference with automatic checkpoint selection (transformer)
+uv run python -m scam_detection.commands infer \
+  infer.texts='["Congratulations! You won a prize!", "Meeting at 3pm"]'
+
+# Inference with specific checkpoint (transformer)
 uv run python -m scam_detection.commands infer \
   infer.model_path=models/checkpoints/best.ckpt \
   infer.texts='["Congratulations! You won a prize!", "Meeting at 3pm"]'
 
 # Inference from file (one message per line)
 uv run python -m scam_detection.commands infer \
-  infer.model_path=models/checkpoints/best.ckpt \
   infer.input_file=readme_assets/messages.txt
+
+# Inference with baseline model (uses MLflow)
+uv run python -m scam_detection.commands infer model=baseline \
+  infer.texts='["Test message"]'
 ```
 
 **Input format:**
@@ -123,16 +130,31 @@ uv run python -m scam_detection.commands infer \
 Deploy the model using MLflow serving:
 
 ```bash
-# Serve a model logged to MLflow
-mlflow models serve -m runs:/<RUN_ID>/model -p 8000
+# Serve latest registered small_transformer model
+MLFLOW_TRACKING_URI=http://127.0.0.1:8080 uv run mlflow models serve \
+  -m models:/small_transformer/latest \
+  -p 8000 \
+  --env-manager local
 
-# Or use a specific model version
-mlflow models serve -m models:/<MODEL_NAME>/<VERSION> -p 8000
+# Serve baseline TF-IDF model
+MLFLOW_TRACKING_URI=http://127.0.0.1:8080 uv run mlflow models serve \
+  -m models:/tfidf/latest \
+  -p 8000 \
+  --env-manager local
+
+# Or use a specific run
+MLFLOW_TRACKING_URI=http://127.0.0.1:8080 uv run mlflow models serve \
+  -m runs:/<RUN_ID>/model \
+  -p 8000 \
+  --env-manager local
 ```
 
-**Usage:**
+**Notes:**
+- `MLFLOW_TRACKING_URI` points to the tracking server where models are registered
+- `--env-manager local` uses the current environment instead of creating a new one
+
+**Test the served model:**
 ```bash
-# Test the served model
 curl -X POST http://127.0.0.1:8000/invocations \
   -H "Content-Type: application/json" \
   -d '{"inputs": ["Your message text here"]}'
