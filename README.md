@@ -148,3 +148,7 @@ uv run pytest
 ```
 
 Test suite includes some smoke tests and CLI interface tests.
+
+## Data preparation
+
+Data is handled with DVC.

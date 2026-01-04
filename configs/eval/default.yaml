@@ -1,2 +1,1 @@
-# Evaluation config
 model_path: models/checkpoints/best.ckpt

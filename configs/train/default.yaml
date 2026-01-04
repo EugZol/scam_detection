@@ -5,4 +5,4 @@ max_epochs: 1
 patience: 3
 mlflow_experiment: message_classification
 cpu_threads: 20
-log_model: true  # Whether to log model to MLflow (disable in tests for speed)
+log_model: true
