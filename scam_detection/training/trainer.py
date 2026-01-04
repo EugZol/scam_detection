@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import lightning.pytorch as pl
 import torch
 from lightning.pytorch.callbacks import EarlyStopping, ModelCheckpoint
@@ -64,7 +66,11 @@ def train_transformer_model(
     )
 
     run_name = f"small_transformer_{time.strftime('%Y%m%d_%H%M%S')}"
-    logger = MLFlowLogger(experiment_name=mlflow_experiment, run_name=run_name)
+    logger = MLFlowLogger(
+        experiment_name=mlflow_experiment,
+        run_name=run_name,
+        tracking_uri=mlflow_tracking_uri,
+    )
 
     trainer_kwargs = {
         "max_epochs": max_epochs,
@@ -87,28 +93,42 @@ def train_transformer_model(
     datamodule.setup()
     train_samples = len(datamodule.train_dataset)
     val_samples = len(datamodule.val_dataset)
-    trainer.logger.log_hyperparams(
-        {
-            "model_type": model_config.model_type,
-            "tokenizer_name": model_config.tokenizer_name,
-            "task": "scam_message_detection",
-            "framework": "pytorch_lightning",
-            "train_samples": train_samples,
-            "val_samples": val_samples,
-            "max_length": model_config.max_length,
-            "batch_size": datamodule.batch_size,
-            "num_workers": datamodule.num_workers,
-            "cpu_threads": cpu_threads,
-            "d_model": model_config.d_model,
-            "n_heads": model_config.n_heads,
-            "n_layers": model_config.n_layers,
-            "ffn_dim": model_config.ffn_dim,
-            "dropout": model_config.dropout,
-        }
-    )
+
+    hyperparams = {
+        "model_type": model_config.model_type,
+        "tokenizer_name": model_config.tokenizer_name,
+        "task": "scam_message_detection",
+        "framework": "pytorch_lightning",
+        "train_samples": train_samples,
+        "val_samples": val_samples,
+        "max_length": model_config.max_length,
+        "batch_size": datamodule.batch_size,
+        "num_workers": datamodule.num_workers,
+        "cpu_threads": cpu_threads,
+        "d_model": model_config.d_model,
+        "n_heads": model_config.n_heads,
+        "n_layers": model_config.n_layers,
+        "ffn_dim": model_config.ffn_dim,
+        "dropout": model_config.dropout,
+    }
 
     if fast_dev_run == 0:
-        log_git_commit()
+        try:
+            import subprocess
+            result = subprocess.run(
+                ["git", "rev-parse", "HEAD"],
+                capture_output=True,
+                text=True,
+                cwd=Path(__file__).parent.parent.parent,
+            )
+            if result.returncode == 0:
+                hyperparams["git_commit"] = result.stdout.strip()
+            else:
+                hyperparams["git_commit"] = "unknown"
+        except Exception:
+            hyperparams["git_commit"] = "unknown"
+
+    trainer.logger.log_hyperparams(hyperparams)
 
     trainer.fit(model, datamodule)
 
@@ -117,11 +137,15 @@ def train_transformer_model(
     if log_model and fast_dev_run == 0:
         import mlflow.pytorch
 
-        mlflow.pytorch.log_model(
-            model,
-            "model",
-            registered_model_name=model_config.model_type,
-        )
+        setup_mlflow_tracking(mlflow_tracking_uri)
+        mlflow.set_experiment(mlflow_experiment)
+
+        with mlflow.start_run(run_id=trainer.logger.run_id):
+            mlflow.pytorch.log_model(
+                model,
+                "model",
+                registered_model_name=model_config.model_type,
+            )
 
     return model
 
