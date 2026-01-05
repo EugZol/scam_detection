@@ -1,5 +1,3 @@
-import os
-
 import mlflow
 import numpy as np
 import pandas as pd
@@ -9,8 +7,6 @@ from transformers import AutoTokenizer
 
 class MessageClassifierWrapper(mlflow.pyfunc.PythonModel):
     def load_context(self, context):
-        import pickle
-
         checkpoint_path = context.artifacts["model_checkpoint"]
         from ..models.lit_module import MessageClassifier
 
@@ -43,7 +39,8 @@ class MessageClassifierWrapper(mlflow.pyfunc.PythonModel):
         else:
             raise ValueError(
                 f"Unsupported input type: {type(model_input)}. "
-                "Expected DataFrame, ndarray, list/tuple/Series, or dict with 'inputs' key."
+                "Expected DataFrame, ndarray, list/tuple/Series, "
+                "or dict with 'inputs' key."
             )
 
         if self.model.model_type == "small_transformer":

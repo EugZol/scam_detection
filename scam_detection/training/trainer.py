@@ -115,6 +115,7 @@ def train_transformer_model(
     if fast_dev_run == 0:
         try:
             import subprocess
+
             result = subprocess.run(
                 ["git", "rev-parse", "HEAD"],
                 capture_output=True,
