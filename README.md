@@ -4,7 +4,18 @@ This project implements a machine learning pipeline for detecting scam messages 
 
 ## Screenshots
 
+![Pre-commit run](readme_assets/pre-commit-run.png)
 
+![Training plot](readme_assets/training-plot.png)
+
+### Small Transformer Model
+![Model metadata](readme_assets/small-transformer-model-meta.png)
+![Run metrics](readme_assets/small-transformer-model-run-metrics.png)
+
+### TF-IDF Baseline Model
+![Model metadata](readme_assets/tf-idf-baseline-model-meta.png)
+![Run metrics](readme_assets/tf-idf-baseline-model-run-metrics.png)
+![Inference result](readme_assets/tf-idf-baseline-infer.png)
 
 ## Message classification
 
